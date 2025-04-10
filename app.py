@@ -19,6 +19,7 @@ app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'  # For session
 app.config['USERS_FILE'] = 'data/users.json'  # File to store user data
 app.config['DIARY_FILE'] = 'data/diary_entries.json'  # File to store diary entries
 app.config['SUPERADMIN_ID'] = 'admin'  # The ID of the superadmin user who can delete entries
+app.config['JSON_AS_ASCII'] = False  # Ensure JSON responses include non-ASCII characters
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -61,32 +62,32 @@ def load_users():
                 'profile_pic': None
             }
         }
-        with open(app.config['USERS_FILE'], 'w') as f:
-            json.dump(users, f)
+        with open(app.config['USERS_FILE'], 'w', encoding='utf-8') as f:
+            json.dump(users, f, ensure_ascii=False)
         print("Created default admin user (username: admin, password: admin)")
     
-    with open(app.config['USERS_FILE'], 'r') as f:
+    with open(app.config['USERS_FILE'], 'r', encoding='utf-8') as f:
         return json.load(f)
 
 # Save users to JSON file
 def save_users(users):
-    with open(app.config['USERS_FILE'], 'w') as f:
-        json.dump(users, f)
+    with open(app.config['USERS_FILE'], 'w', encoding='utf-8') as f:
+        json.dump(users, f, ensure_ascii=False)
 
 # Load diary entries from JSON file
 def load_diary_entries():
     if not os.path.exists(app.config['DIARY_FILE']):
-        with open(app.config['DIARY_FILE'], 'w') as f:
-            json.dump([], f)
+        with open(app.config['DIARY_FILE'], 'w', encoding='utf-8') as f:
+            json.dump([], f, ensure_ascii=False)
         return []
     
-    with open(app.config['DIARY_FILE'], 'r') as f:
+    with open(app.config['DIARY_FILE'], 'r', encoding='utf-8') as f:
         return json.load(f)
 
 # Save diary entries to JSON file
 def save_diary_entries(entries):
-    with open(app.config['DIARY_FILE'], 'w') as f:
-        json.dump(entries, f)
+    with open(app.config['DIARY_FILE'], 'w', encoding='utf-8') as f:
+        json.dump(entries, f, ensure_ascii=False)
 
 # User loader for Flask-Login
 @login_manager.user_loader
@@ -312,9 +313,9 @@ def profile():
 
 # Extract hashtags from content
 def extract_hashtags(content):
-    # Pattern to match hashtags
+    # Pattern to match hashtags - updated to properly handle Unicode characters including Uyghur
     hashtag_pattern = r'#(\w+)'
-    return re.findall(hashtag_pattern, content)
+    return re.findall(hashtag_pattern, content, re.UNICODE)
 
 @app.route('/create_entry', methods=['POST'])
 @login_required
