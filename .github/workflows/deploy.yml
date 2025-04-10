@@ -44,8 +44,8 @@ jobs:
         
     - name: Create required directories
       run: |
-        mkdir -p uploads output status
-        chmod -R 777 uploads output status
+        mkdir -p uploads output status data
+        chmod -R 777 uploads output status data
         
     - name: Start container
       run: |
@@ -58,6 +58,7 @@ jobs:
           -v "$(pwd)/uploads:/app/uploads" \
           -v "$(pwd)/output:/app/output" \
           -v "$(pwd)/status:/app/status" \
+          -v "$(pwd)/data:/app/data" \
           --restart unless-stopped \
           ${{ env.IMAGE_NAME }}
         

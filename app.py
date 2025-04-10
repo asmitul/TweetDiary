@@ -16,8 +16,8 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['STATUS_FOLDER'] = 'status'
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max file size
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'  # For session/login security
-app.config['USERS_FILE'] = 'users.json'  # File to store user data
-app.config['DIARY_FILE'] = 'diary_entries.json'  # File to store diary entries
+app.config['USERS_FILE'] = 'data/users.json'  # File to store user data
+app.config['DIARY_FILE'] = 'data/diary_entries.json'  # File to store diary entries
 app.config['SUPERADMIN_ID'] = 'admin'  # The ID of the superadmin user who can delete entries
 
 # Initialize Flask-Login
