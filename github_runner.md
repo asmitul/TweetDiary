@@ -1,11 +1,11 @@
 docker run -d \
-  --name g-r-pdf2img \
+  --name g-r-diary \
   --restart always \
-  -e RUNNER_NAME=g-r-pdf2img \
-  -e RUNNER_WORKDIR=/tmp/g-r-pdf2img \
+  -e RUNNER_NAME=g-r-diary \
+  -e RUNNER_WORKDIR=/tmp/g-r-diary \
   -e RUNNER_GROUP=Default \
-  -e RUNNER_TOKEN=ABPLEL4Y4A7ZNE5BKUH7EWTHQIQIE \
-  -e REPO_URL=https://github.com/asmitul/pdf2img \
+  -e RUNNER_TOKEN=ABPLEL34CWZHFNSF6DQP4QDH66NRI \
+  -e REPO_URL=https://github.com/asmitul/diary \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  --cpus="0.5" \
+  --cpus="3" \
   myoung34/github-runner:latest

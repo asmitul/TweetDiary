@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ user_data.username }} - TweetDiary</title>
+    <title>#{{ hashtag }} - TweetDiary</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -15,46 +15,24 @@
             margin-top: 20px;
             margin-bottom: 50px;
         }
-        .profile-header {
+        .hashtag-header {
             background-color: white;
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-        }
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 20px;
-        }
-        .profile-info {
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
         }
-        .profile-username {
+        .hashtag-icon {
+            font-size: 2rem;
+            color: #1DA1F2;
+            margin-right: 15px;
+        }
+        .hashtag-title {
             font-size: 1.8rem;
             font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .profile-stats {
-            display: flex;
-            gap: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #e1e8ed;
-        }
-        .stat-item {
-            text-align: center;
-        }
-        .stat-value {
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        .stat-label {
-            color: #657786;
-            font-size: 0.9rem;
+            margin-bottom: 0;
         }
         .entry-card {
             background-color: white;
@@ -185,6 +163,10 @@
         .comment-toggle {
             cursor: pointer;
         }
+        .hashtag-link {
+            color: #1DA1F2;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -203,6 +185,11 @@
                             <i class="fas fa-home me-1"></i>Home
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_profile', user_id=current_user.id) }}">
+                            <i class="fas fa-user me-1"></i>My Profile
+                        </a>
+                    </li>
                     {% if current_user.is_admin %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin') }}">
@@ -213,6 +200,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('profile') }}">
                             <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
                         </a>
                     </li>
                 </ul>
@@ -232,69 +224,38 @@
             {% endif %}
         {% endwith %}
         
-        <!-- Profile Header -->
-        <div class="profile-header">
-            <div class="profile-info">
-                {% if user_data.profile_pic %}
-                    <img src="{{ url_for('media_file', filename=user_data.profile_pic) }}" class="profile-avatar" alt="{{ user_data.username }}">
-                {% else %}
-                    <div class="profile-avatar default-avatar">
-                        {{ user_data.username[0] | upper }}
-                    </div>
-                {% endif %}
-                <div>
-                    <div class="profile-username">{{ user_data.username }}</div>
-                    {% if user_data.is_admin %}
-                        <span class="badge bg-primary">Admin</span>
-                    {% endif %}
-                </div>
+        <div class="hashtag-header">
+            <div class="hashtag-icon">
+                <i class="fas fa-hashtag"></i>
             </div>
-            
-            <div class="profile-stats">
-                <div class="stat-item">
-                    <div class="stat-value">{{ entries|length }}</div>
-                    <div class="stat-label">Tweets</div>
-                </div>
-                
-                {% set likes_received = 0 %}
-                {% for entry in entries %}
-                    {% set likes_received = likes_received + entry.likes|length %}
-                {% endfor %}
-                
-                <div class="stat-item">
-                    <div class="stat-value">{{ likes_received }}</div>
-                    <div class="stat-label">Likes received</div>
-                </div>
-                
-                {% if current_user.id == user_data.id %}
-                    <div class="ms-auto">
-                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary btn-sm rounded-pill">
-                            <i class="fas fa-edit me-1"></i>Edit Profile
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
+            <h1 class="hashtag-title">{{ hashtag }}</h1>
         </div>
         
-        <!-- User Entries -->
+        <!-- Entries Feed -->
         {% if entries %}
             {% for entry in entries %}
                 <div class="entry-card">
                     <div class="entry-header">
-                        {% if user_data.profile_pic %}
-                            <img src="{{ url_for('media_file', filename=user_data.profile_pic) }}" class="user-avatar" alt="{{ user_data.username }}">
+                        {% if users[entry.user_id].get('profile_pic') %}
+                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
+                                <img src="{{ url_for('media_file', filename=users[entry.user_id].profile_pic) }}" class="user-avatar" alt="{{ users[entry.user_id].username }}">
+                            </a>
                         {% else %}
-                            <div class="user-avatar default-avatar">
-                                {{ user_data.username[0] | upper }}
-                            </div>
+                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
+                                <div class="user-avatar default-avatar">
+                                    {{ users[entry.user_id].username[0] | upper }}
+                                </div>
+                            </a>
                         {% endif %}
                         <div class="entry-user">
-                            <span class="entry-username">{{ user_data.username }}</span>
+                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}" class="text-decoration-none text-dark">
+                                <span class="entry-username">{{ users[entry.user_id].username }}</span>
+                            </a>
                             <span class="entry-timestamp">{{ entry.timestamp.split('T')[0] }} at {{ entry.timestamp.split('T')[1][:5] }}</span>
                         </div>
                     </div>
                     
-                    <div class="entry-content">{{ entry.content }}</div>
+                    <div class="entry-content">{{ entry.content | replace('#' + hashtag, '<a href="' + url_for('view_hashtag', tag=hashtag) + '" class="hashtag-link">#' + hashtag + '</a>') | safe }}</div>
                     
                     {% if entry.image %}
                         <img src="{{ url_for('media_file', filename=entry.image) }}" class="entry-image" alt="Entry image">
@@ -357,9 +318,12 @@
             {% endfor %}
         {% else %}
             <div class="text-center py-5">
-                <i class="far fa-comment-dots fa-4x text-muted mb-3"></i>
-                <h3>No entries yet</h3>
-                <p class="text-muted">This user hasn't posted any diary entries yet.</p>
+                <i class="fas fa-hashtag fa-4x text-muted mb-3"></i>
+                <h3>No entries with #{{ hashtag }}</h3>
+                <p class="text-muted">There are no diary entries with this hashtag yet.</p>
+                <a href="/" class="btn btn-primary mt-3">
+                    <i class="fas fa-home me-2"></i>Back to Home
+                </a>
             </div>
         {% endif %}
     </div>

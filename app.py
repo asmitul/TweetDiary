@@ -4,6 +4,7 @@ import uuid
 import time
 import json
 import shutil
+import re
 from datetime import datetime
 from flask import Flask, request, render_template, send_from_directory, redirect, url_for, jsonify, flash, session
 from werkzeug.utils import secure_filename
@@ -295,6 +296,12 @@ def profile():
     
     return render_template('profile.html')
 
+# Extract hashtags from content
+def extract_hashtags(content):
+    # Pattern to match hashtags
+    hashtag_pattern = r'#(\w+)'
+    return re.findall(hashtag_pattern, content)
+
 @app.route('/create_entry', methods=['POST'])
 @login_required
 def create_entry():
@@ -317,6 +324,9 @@ def create_entry():
             image_filename = f"{image_id}_{filename}"
             entry_image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
     
+    # Extract hashtags
+    hashtags = extract_hashtags(content)
+    
     new_entry = {
         'id': entry_id,
         'user_id': current_user.id,
@@ -324,7 +334,8 @@ def create_entry():
         'timestamp': timestamp,
         'image': image_filename,
         'likes': [],
-        'comments': []
+        'comments': [],
+        'hashtags': hashtags
     }
     
     entries = load_diary_entries()
@@ -424,6 +435,134 @@ def user_profile(user_id):
 @login_required
 def media_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/edit_entry/<entry_id>', methods=['GET', 'POST'])
+@login_required
+def edit_entry(entry_id):
+    entries = load_diary_entries()
+    
+    # Find the entry
+    target_entry = None
+    for entry in entries:
+        if entry['id'] == entry_id:
+            target_entry = entry
+            break
+    
+    if not target_entry:
+        flash('Entry not found', 'danger')
+        return redirect(url_for('index'))
+    
+    # Check if user is authorized to edit this entry
+    if target_entry['user_id'] != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to edit this entry', 'danger')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        content = request.form.get('content', '').strip()
+        if not content:
+            flash('Entry content cannot be empty', 'danger')
+            return redirect(url_for('edit_entry', entry_id=entry_id))
+        
+        # Update entry content and extract new hashtags
+        target_entry['content'] = content
+        target_entry['hashtags'] = extract_hashtags(content)
+        
+        # Handle image update
+        if 'entry_image' in request.files:
+            entry_image = request.files['entry_image']
+            if entry_image.filename:
+                # Remove old image if it exists
+                if target_entry.get('image'):
+                    old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], target_entry['image'])
+                    if os.path.exists(old_image_path):
+                        os.remove(old_image_path)
+                
+                # Save new image
+                filename = secure_filename(entry_image.filename)
+                image_id = str(uuid.uuid4())
+                image_filename = f"{image_id}_{filename}"
+                entry_image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+                target_entry['image'] = image_filename
+        
+        # Save the updated entries
+        save_diary_entries(entries)
+        flash('Entry updated successfully', 'success')
+        
+        # Redirect back to the appropriate page
+        if request.form.get('redirect_to') == 'profile':
+            return redirect(url_for('user_profile', user_id=current_user.id))
+        else:
+            return redirect(url_for('index'))
+    
+    # For GET request, render the edit form
+    users = load_users()
+    return render_template('edit_entry.html', entry=target_entry, users=users)
+
+@app.route('/hashtag/<tag>')
+@login_required
+def view_hashtag(tag):
+    entries = load_diary_entries()
+    
+    # Filter entries containing the hashtag
+    tagged_entries = []
+    for entry in entries:
+        hashtags = entry.get('hashtags', [])
+        # If entry doesn't have hashtags field, extract them from content
+        if not hashtags and 'content' in entry:
+            hashtags = extract_hashtags(entry['content'])
+            entry['hashtags'] = hashtags
+        
+        if tag in hashtags:
+            tagged_entries.append(entry)
+    
+    # Sort by timestamp, newest first
+    tagged_entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    # Get users for displaying profile info
+    users = load_users()
+    
+    return render_template('hashtag.html', entries=tagged_entries, users=users, hashtag=tag)
+
+@app.route('/search')
+@login_required
+def search():
+    query = request.args.get('q', '').strip().lower()
+    
+    if not query:
+        return redirect(url_for('index'))
+    
+    # Load entries and users
+    entries = []
+    users = {}
+    
+    if os.path.exists('data/entries.json'):
+        with open('data/entries.json', 'r') as f:
+            entries = json.load(f)
+    
+    if os.path.exists('data/users.json'):
+        with open('data/users.json', 'r') as f:
+            users = json.load(f)
+    
+    # Filter entries by search query
+    search_results = []
+    
+    for entry in entries:
+        # Search in content
+        if query in entry['content'].lower():
+            search_results.append(entry)
+            continue
+            
+        # Search in hashtags
+        if 'hashtags' in entry:
+            for tag in entry['hashtags']:
+                if query in tag.lower() or query == '#' + tag.lower():
+                    search_results.append(entry)
+                    break
+    
+    # Sort by timestamp in descending order
+    search_results.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    return render_template('search_results.html', entries=search_results, users=users, query=query)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
