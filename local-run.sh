@@ -3,7 +3,7 @@
 # Container settings
 IMAGE_NAME="pdf-to-image-web"
 CONTAINER_NAME="pdf2img-app"
-PORT=8090
+PORT=8091
 CPU_CORES=3.0
 
 # Function to show usage
@@ -72,7 +72,7 @@ case "$1" in
             docker run -d \
               --name $CONTAINER_NAME \
               --cpus=$CPU_CORES \
-              -p $PORT:8090 \
+              -p $PORT:8091 \
               -v "$(pwd)/uploads:/app/uploads" \
               -v "$(pwd)/output:/app/output" \
               -v "$(pwd)/status:/app/status" \
@@ -106,7 +106,7 @@ case "$1" in
         docker run -d \
           --name $CONTAINER_NAME \
           --cpus=$CPU_CORES \
-          -p $PORT:8090 \
+          -p $PORT:8091 \
           -v "$(pwd)/uploads:/app/uploads" \
           -v "$(pwd)/output:/app/output" \
           -v "$(pwd)/status:/app/status" \

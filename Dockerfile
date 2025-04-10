@@ -28,7 +28,7 @@ COPY static/ static/
 RUN chmod +x pdf_to_image.py app.py
 
 # Expose the non-standard port
-EXPOSE 8090
+EXPOSE 8091
 
 # Set default command to use Gunicorn with increased timeout and gevent worker
-CMD ["gunicorn", "--bind", "0.0.0.0:8090", "--workers", "4", "--timeout", "300", "--worker-class", "gevent", "--worker-connections", "1000", "app:app"] 
+CMD ["gunicorn", "--bind", "0.0.0.0:8091", "--workers", "4", "--timeout", "300", "--worker-class", "gevent", "--worker-connections", "1000", "app:app"] 

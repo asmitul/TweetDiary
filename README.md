@@ -50,7 +50,7 @@ No other dependencies needed to be installed locally as everything runs in the D
 
 4. Open your browser and navigate to:
    ```
-   http://localhost:8090
+   http://localhost:8091
    ```
 
 ## Local Usage Options
@@ -139,7 +139,7 @@ The deployment workflow is defined in `.github/workflows/deploy.yml` and uses di
 - Build the Docker image
 - Start the container with proper volume mounts
 - Limit CPU usage to 50%
-- Expose the application on port 8090
+- Expose the application on port 8091
 
 To manually trigger a deployment, go to the Actions tab in your GitHub repository and run the "Deploy to Server" workflow.
 
@@ -163,7 +163,7 @@ If you prefer to run commands manually:
    docker run -d \
      --name pdf2img-app \
      --cpus=3.0 \
-     -p 8090:8090 \
+     -p 8091:8091 \
      -v "$(pwd)/uploads:/app/uploads" \
      -v "$(pwd)/output:/app/output" \
      -v "$(pwd)/status:/app/status" \
