@@ -1,4 +1,4 @@
-# TweetDiary - Your Personal Twitter-like Diary 
+# TweetDiary - Your Personal Twitter-like Diary
 
 TweetDiary is a web application that provides a private Twitter-like experience for personal journaling. Create posts, add images, like entries, comment, and use hashtags - all in a familiar social media interface but for your personal use.
 
