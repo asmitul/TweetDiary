@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF处理中 - 请稍候</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .container {
+            max-width: 800px;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        .processing-card {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .processing-icon {
+            font-size: 80px;
+            color: #4CAF50;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+        .processing-message {
+            font-size: 1.5rem;
+            margin: 20px 0;
+        }
+        .processing-status {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+        .progress {
+            height: 25px;
+            background-color: #e9ecef;
+            margin: 30px 0;
+        }
+        .progress-bar {
+            background-color: #4CAF50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .back-button {
+            margin-top: 20px;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+        }
+        .status-details {
+            background-color: #eef9ff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 20px;
+            text-align: left;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="processing-card">
+            <i class="fas fa-cog fa-spin processing-icon"></i>
+            <h1>PDF处理中</h1>
+            <div class="processing-message">您的文件正在处理中，请稍候...</div>
+            <div class="processing-status" id="statusMessage">{{ status.message }}</div>
+            
+            <div class="progress">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+            </div>
+            
+            <div id="estimatedTime" class="mb-3">预计剩余时间: 计算中...</div>
+            
+            <div class="status-details">
+                <div><strong>文件ID:</strong> <span id="fileId">{{ file_id }}</span></div>
+                {% if status.original_filename %}
+                <div><strong>原始文件名:</strong> <span>{{ status.original_filename }}</span></div>
+                {% endif %}
+                <div><strong>状态:</strong> <span id="status">{{ status.status }}</span></div>
+                <div><strong>上次更新:</strong> <span id="lastUpdate">计算中...</span></div>
+            </div>
+            
+            <div class="back-button">
+                <a href="/" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>返回主页
+                </a>
+                <a href="/history" class="btn btn-outline-primary">
+                    <i class="fas fa-history me-2"></i>查看历史
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Get elements
+        const progressBar = document.getElementById('progressBar');
+        const statusMessage = document.getElementById('statusMessage');
+        const statusElement = document.getElementById('status');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const estimatedTime = document.getElementById('estimatedTime');
+        const fileId = '{{ file_id }}';
+        
+        // Start time for estimation
+        const startTime = new Date();
+        let progress = 0;
+        let statusText = '{{ status.status }}';
+        
+        // Update progress animation
+        function updateProgress() {
+            if (statusText === 'completed') {
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                window.location.href = '/view/' + fileId;
+                return;
+            }
+            
+            if (statusText === 'error') {
+                progressBar.classList.remove('bg-success');
+                progressBar.classList.add('bg-danger');
+                progressBar.style.width = '100%';
+                progressBar.textContent = 'Error';
+                return;
+            }
+            
+            // If processing is ongoing, simulate progress
+            if (statusText === 'processing') {
+                // Cap progress at 90% while processing
+                if (progress < 90) {
+                    progress += Math.random() * 0.5;
+                    if (progress > 90) progress = 90;
+                }
+            } else {
+                // For pending status, cap at 20%
+                if (progress < 20) {
+                    progress += Math.random() * 0.3;
+                    if (progress > 20) progress = 20;
+                }
+            }
+            
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = Math.round(progress) + '%';
+            
+            // Update estimated time
+            const elapsedSeconds = (new Date() - startTime) / 1000;
+            if (progress > 0) {
+                const estimatedTotalSeconds = (elapsedSeconds / progress) * 100;
+                const remainingSeconds = Math.max(0, estimatedTotalSeconds - elapsedSeconds);
+                
+                if (remainingSeconds > 60) {
+                    const minutes = Math.floor(remainingSeconds / 60);
+                    const seconds = Math.floor(remainingSeconds % 60);
+                    estimatedTime.textContent = `预计剩余时间: ${minutes}分 ${seconds}秒`;
+                } else {
+                    estimatedTime.textContent = `预计剩余时间: ${Math.round(remainingSeconds)}秒`;
+                }
+            }
+        }
+        
+        // Check status periodically
+        function checkStatus() {
+            fetch('/status/' + fileId)
+                .then(response => response.json())
+                .then(data => {
+                    statusText = data.status;
+                    statusMessage.textContent = data.message;
+                    statusElement.textContent = data.status;
+                    
+                    // Format timestamp
+                    if (data.timestamp) {
+                        const date = new Date(data.timestamp * 1000);
+                        lastUpdate.textContent = date.toLocaleTimeString();
+                    }
+                    
+                    if (data.status === 'completed') {
+                        setTimeout(() => {
+                            window.location.href = '/view/' + fileId;
+                        }, 1000);
+                    } else if (data.status === 'error') {
+                        setTimeout(() => {
+                            window.location.href = '/view/' + fileId;
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking status:', error);
+                });
+        }
+        
+        // Update progress animation every 500ms
+        setInterval(updateProgress, 500);
+        
+        // Check status every 3 seconds
+        setInterval(checkStatus, 3000);
+        
+        // Initial status check
+        checkStatus();
+    </script>
+</body>
+</html> 

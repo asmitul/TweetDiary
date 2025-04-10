@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>转换历史记录 - PDF到图片</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin-top: 30px;
+            margin-bottom: 50px;
+        }
+        .history-title {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .card-img-top {
+            height: 200px;
+            object-fit: contain;
+            background-color: #f8f9fa;
+            padding: 10px;
+        }
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .empty-history {
+            text-align: center;
+            margin: 100px 0;
+            color: #6c757d;
+        }
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        .date-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .card-footer {
+            background-color: rgba(0,0,0,0.03);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding: 12px 15px;
+        }
+        .card-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .card-buttons .btn {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="history-title">
+            <h1>转换历史记录</h1>
+            <a href="/" class="btn btn-outline-primary">
+                <i class="fas fa-home me-2"></i>返回首页
+            </a>
+        </div>
+        
+        {% if conversions %}
+            <div class="history-grid">
+                {% for conversion in conversions %}
+                    <div class="card">
+                        {% if conversion.thumbnail %}
+                            <div class="position-relative">
+                                <img src="/download/{{ conversion.id }}/{{ conversion.thumbnail }}" class="card-img-top" alt="Thumbnail">
+                                <div class="date-badge">
+                                    <i class="far fa-calendar-alt me-1"></i>{{ conversion.date }}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="card-img-top d-flex justify-content-center align-items-center">
+                                <i class="fas fa-image text-muted" style="font-size: 50px;"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="card-body">
+                            <h5 class="card-title text-truncate" title="{{ conversion.original_filename }}">
+                                {{ conversion.original_filename }}
+                            </h5>
+                            <p class="card-text">
+                                <i class="fas fa-images me-1"></i> {{ conversion.image_count }} 张图片
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-cog me-1"></i> DPI: {{ conversion.dpi }}
+                                    {% if conversion.split_pages %}
+                                    • 分割双页
+                                    {% endif %}
+                                    {% if conversion.crop_margin > 0 %}
+                                    • 裁剪: {{ conversion.crop_margin }}px
+                                    {% endif %}
+                                </small>
+                            </p>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <div class="card-buttons">
+                                <a href="/view/{{ conversion.id }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye me-1"></i>查看
+                                </a>
+                                <a href="/download-all/{{ conversion.id }}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-download me-1"></i>下载
+                                </a>
+                                {% if current_user.is_superadmin %}
+                                <form action="/delete-conversion/{{ conversion.id }}" method="POST" style="display: inline;" onsubmit="return confirm('确定要删除此转换记录吗？此操作不可撤销。');">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash me-1"></i>删除
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-history">
+                <i class="fas fa-history empty-icon"></i>
+                <h3>没有转换历史记录</h3>
+                <p>您还没有进行过PDF转换，请返回首页开始一次新的转换。</p>
+                <a href="/" class="btn btn-primary mt-3">
+                    <i class="fas fa-upload me-2"></i>开始转换
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

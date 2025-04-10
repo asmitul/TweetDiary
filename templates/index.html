@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TweetDiary - Your Personal Twitter-like Diary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 650px;
+            margin-top: 20px;
+            margin-bottom: 50px;
+        }
+        .compose-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .entry-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+        .entry-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .compose-textarea {
+            resize: none;
+            border: none;
+            width: 100%;
+            outline: none;
+            font-size: 1.1rem;
+            padding: 10px 0;
+        }
+        .compose-textarea:focus {
+            box-shadow: none;
+        }
+        .compose-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            border-top: 1px solid #e1e8ed;
+            padding-top: 15px;
+        }
+        .compose-actions {
+            display: flex;
+            align-items: center;
+        }
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+        .entry-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .entry-user {
+            display: flex;
+            flex-direction: column;
+        }
+        .entry-username {
+            font-weight: bold;
+        }
+        .entry-timestamp {
+            color: #657786;
+            font-size: 0.8rem;
+        }
+        .entry-content {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        .entry-image {
+            max-width: 100%;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+        .entry-actions {
+            display: flex;
+            justify-content: space-between;
+            color: #657786;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e1e8ed;
+        }
+        .action-icon {
+            color: #657786;
+            margin-right: 5px;
+        }
+        .action-liked {
+            color: #e0245e;
+        }
+        .action-button {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 20px;
+            transition: background-color 0.2s;
+        }
+        .action-button:hover {
+            background-color: rgba(29, 161, 242, 0.1);
+        }
+        .comment-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e1e8ed;
+        }
+        .comment-form {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .comment-input {
+            flex-grow: 1;
+            border: 1px solid #e1e8ed;
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin-right: 10px;
+        }
+        .comment-item {
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            margin-bottom: 8px;
+        }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .comment-username {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .comment-timestamp {
+            color: #657786;
+            font-size: 0.8rem;
+        }
+        .comment-content {
+            font-size: 0.95rem;
+        }
+        .navbar {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #1DA1F2;
+        }
+        .default-avatar {
+            background-color: #1DA1F2;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .char-counter {
+            color: #657786;
+            font-size: 0.9rem;
+            margin-right: 10px;
+        }
+        .comment-toggle {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fab fa-twitter text-primary me-2"></i>TweetDiary
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin') }}">
+                            <i class="fas fa-users-cog me-1"></i>Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_profile', user_id=current_user.id) }}">
+                            <i class="fas fa-user me-1"></i>My Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('profile') }}">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Compose New Entry -->
+        <div class="compose-card">
+            <form action="{{ url_for('create_entry') }}" method="post" enctype="multipart/form-data">
+                <div class="d-flex">
+                    {% if current_user.profile_pic %}
+                        <img src="{{ url_for('media_file', filename=current_user.profile_pic) }}" class="user-avatar" alt="{{ current_user.username }}">
+                    {% else %}
+                        <div class="user-avatar default-avatar">
+                            {{ current_user.username[0] | upper }}
+                        </div>
+                    {% endif %}
+                    <textarea class="compose-textarea" name="content" placeholder="What's happening?" maxlength="280" id="content-textarea" required></textarea>
+                </div>
+                <div class="compose-footer">
+                    <div class="compose-actions">
+                        <label for="entry_image" class="action-button">
+                            <i class="far fa-image text-primary"></i>
+                        </label>
+                        <input type="file" id="entry_image" name="entry_image" accept="image/*" style="display: none;">
+                        <span id="image-selected" class="small text-muted ms-2" style="display: none;">Image selected</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="char-counter" id="char-counter">0/280</span>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Tweet</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Entries Feed -->
+        {% if entries %}
+            {% for entry in entries %}
+                <div class="entry-card">
+                    <div class="entry-header">
+                        {% if users[entry.user_id].get('profile_pic') %}
+                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
+                                <img src="{{ url_for('media_file', filename=users[entry.user_id].profile_pic) }}" class="user-avatar" alt="{{ users[entry.user_id].username }}">
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
+                                <div class="user-avatar default-avatar">
+                                    {{ users[entry.user_id].username[0] | upper }}
+                                </div>
+                            </a>
+                        {% endif %}
+                        <div class="entry-user">
+                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}" class="text-decoration-none text-dark">
+                                <span class="entry-username">{{ users[entry.user_id].username }}</span>
+                            </a>
+                            <span class="entry-timestamp">{{ entry.timestamp.split('T')[0] }} at {{ entry.timestamp.split('T')[1][:5] }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="entry-content">{{ entry.content }}</div>
+                    
+                    {% if entry.image %}
+                        <img src="{{ url_for('media_file', filename=entry.image) }}" class="entry-image" alt="Entry image">
+                    {% endif %}
+                    
+                    <div class="entry-actions">
+                        <div>
+                            <form action="{{ url_for('like_entry', entry_id=entry.id) }}" method="post" class="d-inline">
+                                <button type="submit" class="action-button">
+                                    {% if current_user.id in entry.likes %}
+                                        <i class="fas fa-heart action-icon action-liked"></i>
+                                    {% else %}
+                                        <i class="far fa-heart action-icon"></i>
+                                    {% endif %}
+                                    <span>{{ entry.likes|length }}</span>
+                                </button>
+                            </form>
+                            <span class="action-button comment-toggle" data-comment-id="comments-{{ entry.id }}">
+                                <i class="far fa-comment action-icon"></i>
+                                <span>{{ entry.comments|length }}</span>
+                            </span>
+                        </div>
+                        
+                        {% if entry.user_id == current_user.id or current_user.is_admin %}
+                            <form action="{{ url_for('delete_entry', entry_id=entry.id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this entry?');">
+                                <button type="submit" class="action-button text-danger">
+                                    <i class="far fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="comment-section" id="comments-{{ entry.id }}" style="display: none;">
+                        <form action="{{ url_for('add_comment', entry_id=entry.id) }}" method="post" class="comment-form">
+                            <input type="text" name="comment" class="comment-input" placeholder="Add a comment..." required>
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill">Reply</button>
+                        </form>
+                        
+                        {% if entry.comments %}
+                            {% for comment in entry.comments|sort(attribute='timestamp', reverse=true) %}
+                                <div class="comment-item">
+                                    <div class="comment-header">
+                                        <span class="comment-username">{{ users[comment.user_id].username }}</span>
+                                        <span class="comment-timestamp">{{ comment.timestamp.split('T')[0] }} {{ comment.timestamp.split('T')[1][:5] }}</span>
+                                    </div>
+                                    <div class="comment-content">{{ comment.content }}</div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="far fa-comment-dots fa-4x text-muted mb-3"></i>
+                <h3>No entries yet</h3>
+                <p class="text-muted">Start by creating your first diary entry above!</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Character counter for textarea
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('content-textarea');
+            const charCounter = document.getElementById('char-counter');
+            
+            textarea.addEventListener('input', function() {
+                const count = this.value.length;
+                charCounter.textContent = `${count}/280`;
+                
+                if (count > 240) {
+                    charCounter.style.color = '#e0245e';
+                } else {
+                    charCounter.style.color = '#657786';
+                }
+            });
+            
+            // Image upload preview
+            const imageInput = document.getElementById('entry_image');
+            const imageSelectedText = document.getElementById('image-selected');
+            
+            imageInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    imageSelectedText.style.display = 'inline';
+                } else {
+                    imageSelectedText.style.display = 'none';
+                }
+            });
+            
+            // Comment section toggle
+            const commentToggles = document.querySelectorAll('.comment-toggle');
+            commentToggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const commentSectionId = this.getAttribute('data-comment-id');
+                    const commentSection = document.getElementById(commentSectionId);
+                    
+                    if (commentSection.style.display === 'none') {
+                        commentSection.style.display = 'block';
+                    } else {
+                        commentSection.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

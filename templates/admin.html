@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - TweetDiary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 20px;
+            margin-bottom: 50px;
+        }
+        .admin-card {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .admin-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        .navbar {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #1DA1F2;
+        }
+        .user-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .user-table th {
+            padding: 15px 10px;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #657786;
+        }
+        .user-table td {
+            padding: 15px 10px;
+            border-bottom: 1px solid #e1e8ed;
+            vertical-align: middle;
+        }
+        .user-table tr:last-child td {
+            border-bottom: none;
+        }
+        .user-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .default-avatar {
+            background-color: #1DA1F2;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .badge-admin {
+            background-color: #1DA1F2;
+            color: white;
+            font-weight: normal;
+            font-size: 0.75rem;
+            padding: 0.25em 0.6em;
+            border-radius: 10px;
+        }
+        .badge-superadmin {
+            background-color: #e0245e;
+            color: white;
+            font-weight: normal;
+            font-size: 0.75rem;
+            padding: 0.25em 0.6em;
+            border-radius: 10px;
+        }
+        .btn-action {
+            padding: 5px 10px;
+            font-size: 0.85rem;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fab fa-twitter text-primary me-2"></i>TweetDiary
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_profile', user_id=current_user.id) }}">
+                            <i class="fas fa-user me-1"></i>My Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('profile') }}">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="admin-card">
+            <div class="admin-header">
+                <h1 class="admin-title">User Management</h1>
+            </div>
+            
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>ID</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_id, user in users.items() %}
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    {% if user.profile_pic %}
+                                        <img src="{{ url_for('media_file', filename=user.profile_pic) }}" class="user-avatar" alt="{{ user.username }}">
+                                    {% else %}
+                                        <div class="default-avatar">
+                                            {{ user.username[0] | upper }}
+                                        </div>
+                                    {% endif %}
+                                    <a href="{{ url_for('user_profile', user_id=user_id) }}" class="text-decoration-none text-dark">
+                                        {{ user.username }}
+                                    </a>
+                                </div>
+                            </td>
+                            <td><span class="text-muted small">{{ user_id }}</span></td>
+                            <td>
+                                {% if user_id == app.config['SUPERADMIN_ID'] %}
+                                    <span class="badge badge-superadmin">Super Admin</span>
+                                {% elif user.is_admin %}
+                                    <span class="badge badge-admin">Admin</span>
+                                {% else %}
+                                    <span class="text-muted">User</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    {% if current_user.is_superadmin and user_id != app.config['SUPERADMIN_ID'] %}
+                                        <form action="{{ url_for('toggle_admin', user_id=user_id) }}" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary btn-action">
+                                                {% if user.is_admin %}
+                                                    <i class="fas fa-user me-1"></i>Remove Admin
+                                                {% else %}
+                                                    <i class="fas fa-user-shield me-1"></i>Make Admin
+                                                {% endif %}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    
+                                    {% if user_id != current_user.id %}
+                                        <form action="{{ url_for('delete_user', user_id=user_id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger btn-action">
+                                                <i class="fas fa-trash-alt me-1"></i>Delete
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
