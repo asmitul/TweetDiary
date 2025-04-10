@@ -111,12 +111,26 @@ def index():
     
     # Load all diary entries
     entries = load_diary_entries()
-    entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    # Filter out private entries from other users
+    filtered_entries = []
+    for entry in entries:
+        # Include the entry if:
+        # 1. It belongs to the current user, OR
+        # 2. It's not private, OR
+        # 3. Current user is an admin
+        if (entry['user_id'] == current_user.id or 
+            not entry.get('is_private', False) or 
+            current_user.is_admin):
+            filtered_entries.append(entry)
+    
+    # Sort entries by timestamp (newest first)
+    filtered_entries.sort(key=lambda x: x['timestamp'], reverse=True)
     
     # Get all users for displaying profile info
     users = load_users()
     
-    return render_template('index.html', entries=entries, users=users)
+    return render_template('index.html', entries=filtered_entries, users=users)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -310,6 +324,9 @@ def create_entry():
         flash('Entry content cannot be empty', 'danger')
         return redirect(url_for('index'))
         
+    # Check if the entry is private
+    is_private = request.form.get('is_private') == 'on'
+    
     # Create new diary entry
     entry_id = str(uuid.uuid4())
     timestamp = datetime.now().isoformat()
@@ -335,7 +352,8 @@ def create_entry():
         'image': image_filename,
         'likes': [],
         'comments': [],
-        'hashtags': hashtags
+        'hashtags': hashtags,
+        'is_private': is_private
     }
     
     entries = load_diary_entries()
@@ -423,7 +441,19 @@ def user_profile(user_id):
         return redirect(url_for('index'))
     
     entries = load_diary_entries()
-    user_entries = [entry for entry in entries if entry['user_id'] == user_id]
+    user_entries = []
+    
+    for entry in entries:
+        if entry['user_id'] == user_id:
+            # Show entry if:
+            # 1. Current user is viewing their own profile, OR
+            # 2. The entry is not private, OR
+            # 3. Current user is an admin
+            if (current_user.id == user_id or 
+                not entry.get('is_private', False) or 
+                current_user.is_admin):
+                user_entries.append(entry)
+                
     user_entries.sort(key=lambda x: x['timestamp'], reverse=True)
     
     return render_template('user_profile.html', 
@@ -467,6 +497,9 @@ def edit_entry(entry_id):
         target_entry['content'] = content
         target_entry['hashtags'] = extract_hashtags(content)
         
+        # Update privacy setting
+        target_entry['is_private'] = request.form.get('is_private') == 'on'
+        
         # Handle image update
         if 'entry_image' in request.files:
             entry_image = request.files['entry_image']
@@ -503,66 +536,60 @@ def edit_entry(entry_id):
 def view_hashtag(tag):
     entries = load_diary_entries()
     
-    # Filter entries containing the hashtag
-    tagged_entries = []
+    # Filter entries containing the hashtag and respect privacy settings
+    hashtag_entries = []
     for entry in entries:
-        hashtags = entry.get('hashtags', [])
-        # If entry doesn't have hashtags field, extract them from content
-        if not hashtags and 'content' in entry:
-            hashtags = extract_hashtags(entry['content'])
-            entry['hashtags'] = hashtags
-        
-        if tag in hashtags:
-            tagged_entries.append(entry)
+        if tag in entry.get('hashtags', []):
+            # Include the entry if:
+            # 1. It belongs to the current user, OR
+            # 2. It's not private, OR
+            # 3. Current user is an admin
+            if (entry['user_id'] == current_user.id or 
+                not entry.get('is_private', False) or 
+                current_user.is_admin):
+                hashtag_entries.append(entry)
     
-    # Sort by timestamp, newest first
-    tagged_entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    hashtag_entries.sort(key=lambda x: x['timestamp'], reverse=True)
     
-    # Get users for displaying profile info
+    # Get all users for displaying profile info
     users = load_users()
     
-    return render_template('hashtag.html', entries=tagged_entries, users=users, hashtag=tag)
+    return render_template('hashtag.html', 
+                          tag=tag,
+                          entries=hashtag_entries, 
+                          users=users)
 
 @app.route('/search')
 @login_required
 def search():
-    query = request.args.get('q', '').strip().lower()
-    
+    query = request.args.get('q', '').strip()
     if not query:
+        flash('Please enter a search term', 'warning')
         return redirect(url_for('index'))
     
-    # Load entries and users
-    entries = []
-    users = {}
+    entries = load_diary_entries()
+    users_data = load_users()
     
-    if os.path.exists('data/entries.json'):
-        with open('data/entries.json', 'r') as f:
-            entries = json.load(f)
-    
-    if os.path.exists('data/users.json'):
-        with open('data/users.json', 'r') as f:
-            users = json.load(f)
-    
-    # Filter entries by search query
+    # Search in content and respect privacy settings
     search_results = []
-    
     for entry in entries:
-        # Search in content
-        if query in entry['content'].lower():
-            search_results.append(entry)
-            continue
-            
-        # Search in hashtags
-        if 'hashtags' in entry:
-            for tag in entry['hashtags']:
-                if query in tag.lower() or query == '#' + tag.lower():
-                    search_results.append(entry)
-                    break
+        # Check if entry's content contains the query (case insensitive)
+        if query.lower() in entry['content'].lower():
+            # Include the entry if:
+            # 1. It belongs to the current user, OR
+            # 2. It's not private, OR
+            # 3. Current user is an admin
+            if (entry['user_id'] == current_user.id or 
+                not entry.get('is_private', False) or 
+                current_user.is_admin):
+                search_results.append(entry)
     
-    # Sort by timestamp in descending order
     search_results.sort(key=lambda x: x['timestamp'], reverse=True)
     
-    return render_template('search_results.html', entries=search_results, users=users, query=query)
+    return render_template('search_results.html', 
+                          query=query,
+                          entries=search_results, 
+                          users=users_data)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
