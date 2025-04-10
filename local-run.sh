@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Container settings
-IMAGE_NAME="pdf-to-image-web"
-CONTAINER_NAME="pdf2img-app"
+IMAGE_NAME="tweetdiary"
+CONTAINER_NAME="tweetdiary"
 PORT=8091
 CPU_CORES=3.0
 
 # Function to show usage
 show_usage() {
-    echo "PDF to Image Web Application - Local Runner"
+    echo "TweetDiary - Local Runner"
     echo "Usage: $0 [command]"
     echo "Commands:"
     echo "  start    Start the application"
@@ -34,7 +34,7 @@ check_app_status() {
     fi
     
     # Wait up to 60 seconds for the application to start
-    echo "Waiting for Gunicorn server to start (this may take up to 60 seconds)..."
+    echo "Waiting for server to start (this may take up to 60 seconds)..."
     for i in {1..12}; do
         echo "Attempt $i/12 - waiting 5 seconds..."
         sleep 5
@@ -65,8 +65,8 @@ case "$1" in
             docker build -t $IMAGE_NAME .
             
             echo "Creating directories..."
-            mkdir -p uploads output status
-            chmod -R 777 uploads output status
+            mkdir -p uploads status data
+            chmod -R 777 uploads status data
             
             echo "Starting container with $CPU_CORES CPU cores..."
             docker run -d \
@@ -74,7 +74,7 @@ case "$1" in
               --cpus=$CPU_CORES \
               -p $PORT:8091 \
               -v "$(pwd)/uploads:/app/uploads" \
-              -v "$(pwd)/output:/app/output" \
+              -v "$(pwd)/data:/app/data" \
               -v "$(pwd)/status:/app/status" \
               --restart unless-stopped \
               $IMAGE_NAME
@@ -99,8 +99,8 @@ case "$1" in
         docker build -t $IMAGE_NAME .
         
         echo "Creating directories..."
-        mkdir -p uploads output status
-        chmod -R 777 uploads output status
+        mkdir -p uploads status data
+        chmod -R 777 uploads status data
         
         echo "Starting container with $CPU_CORES CPU cores..."
         docker run -d \
@@ -108,7 +108,7 @@ case "$1" in
           --cpus=$CPU_CORES \
           -p $PORT:8091 \
           -v "$(pwd)/uploads:/app/uploads" \
-          -v "$(pwd)/output:/app/output" \
+          -v "$(pwd)/data:/app/data" \
           -v "$(pwd)/status:/app/status" \
           --restart unless-stopped \
           $IMAGE_NAME
