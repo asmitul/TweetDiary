@@ -220,6 +220,26 @@
             const textarea = document.getElementById('content-textarea');
             const charCounter = document.getElementById('char-counter');
             
+            // Auto-dismiss alerts after 5 seconds
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+            
+            // Update character counter on load
+            const count = textarea.value.length;
+            charCounter.textContent = `${count}/280`;
+            
+            // Set initial color
+            if (count > 240) {
+                charCounter.style.color = '#e0245e';
+            } else {
+                charCounter.style.color = '#657786';
+            }
+            
             // Update character counter on input
             textarea.addEventListener('input', function() {
                 const count = this.value.length;
