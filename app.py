@@ -20,6 +20,7 @@ app.config['USERS_FILE'] = 'data/users.json'  # File to store user data
 app.config['DIARY_FILE'] = 'data/diary_entries.json'  # File to store diary entries
 app.config['SUPERADMIN_ID'] = 'admin'  # The ID of the superadmin user who can delete entries
 app.config['JSON_AS_ASCII'] = False  # Ensure JSON responses include non-ASCII characters
+app.config['ENTRIES_PER_PAGE'] = 10  # Number of entries to display per page
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -105,7 +106,8 @@ def load_user(user_id):
     return None
 
 @app.route('/')
-def index():
+@app.route('/page/<int:page>')
+def index(page=1):
     # Redirect to login if not logged in
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
@@ -128,10 +130,30 @@ def index():
     # Sort entries by timestamp (newest first)
     filtered_entries.sort(key=lambda x: x['timestamp'], reverse=True)
     
+    # Implement pagination
+    entries_per_page = app.config['ENTRIES_PER_PAGE']
+    total_entries = len(filtered_entries)
+    total_pages = (total_entries + entries_per_page - 1) // entries_per_page  # Ceiling division
+    
+    # Ensure page is within valid range
+    if page < 1:
+        page = 1
+    elif page > total_pages and total_pages > 0:
+        page = total_pages
+    
+    # Get entries for current page
+    start_idx = (page - 1) * entries_per_page
+    end_idx = min(start_idx + entries_per_page, total_entries)
+    paginated_entries = filtered_entries[start_idx:end_idx]
+    
     # Get all users for displaying profile info
     users = load_users()
     
-    return render_template('index.html', entries=filtered_entries, users=users)
+    return render_template('index.html', 
+                          entries=paginated_entries, 
+                          users=users,
+                          current_page=page,
+                          total_pages=total_pages)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -434,8 +456,9 @@ def delete_entry(entry_id):
     return redirect(url_for('index'))
 
 @app.route('/user/<user_id>')
+@app.route('/user/<user_id>/page/<int:page>')
 @login_required
-def user_profile(user_id):
+def user_profile(user_id, page=1):
     users = load_users()
     if user_id not in users:
         flash('User not found', 'danger')
@@ -457,10 +480,29 @@ def user_profile(user_id):
                 
     user_entries.sort(key=lambda x: x['timestamp'], reverse=True)
     
+    # Implement pagination
+    entries_per_page = app.config['ENTRIES_PER_PAGE']
+    total_entries = len(user_entries)
+    total_pages = (total_entries + entries_per_page - 1) // entries_per_page  # Ceiling division
+    
+    # Ensure page is within valid range
+    if page < 1:
+        page = 1
+    elif page > total_pages and total_pages > 0:
+        page = total_pages
+    
+    # Get entries for current page
+    start_idx = (page - 1) * entries_per_page
+    end_idx = min(start_idx + entries_per_page, total_entries)
+    paginated_entries = user_entries[start_idx:end_idx]
+    
     return render_template('user_profile.html', 
                           user_data=users[user_id], 
-                          entries=user_entries, 
-                          users=users)
+                          entries=paginated_entries, 
+                          users=users,
+                          current_page=page,
+                          total_pages=total_pages,
+                          profile_user_id=user_id)
 
 @app.route('/media/<filename>')
 @login_required
@@ -533,13 +575,14 @@ def edit_entry(entry_id):
     return render_template('edit_entry.html', entry=target_entry, users=users)
 
 @app.route('/hashtag/<tag>')
+@app.route('/hashtag/<tag>/page/<int:page>')
 @login_required
-def view_hashtag(tag):
+def view_hashtag(tag, page=1):
     entries = load_diary_entries()
+    tagged_entries = []
     
-    # Filter entries containing the hashtag and respect privacy settings
-    hashtag_entries = []
     for entry in entries:
+        # Check if the entry contains the specific hashtag
         if tag in entry.get('hashtags', []):
             # Include the entry if:
             # 1. It belongs to the current user, OR
@@ -548,34 +591,54 @@ def view_hashtag(tag):
             if (entry['user_id'] == current_user.id or 
                 not entry.get('is_private', False) or 
                 current_user.is_admin):
-                hashtag_entries.append(entry)
+                tagged_entries.append(entry)
     
-    hashtag_entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    # Sort entries by timestamp (newest first)
+    tagged_entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    # Implement pagination
+    entries_per_page = app.config['ENTRIES_PER_PAGE']
+    total_entries = len(tagged_entries)
+    total_pages = (total_entries + entries_per_page - 1) // entries_per_page  # Ceiling division
+    
+    # Ensure page is within valid range
+    if page < 1:
+        page = 1
+    elif page > total_pages and total_pages > 0:
+        page = total_pages
+    
+    # Get entries for current page
+    start_idx = (page - 1) * entries_per_page
+    end_idx = min(start_idx + entries_per_page, total_entries)
+    paginated_entries = tagged_entries[start_idx:end_idx]
     
     # Get all users for displaying profile info
     users = load_users()
     
     return render_template('hashtag.html', 
-                          tag=tag,
-                          entries=hashtag_entries, 
-                          users=users)
+                          tag=tag, 
+                          entries=paginated_entries, 
+                          users=users,
+                          current_page=page,
+                          total_pages=total_pages)
 
 @app.route('/search')
+@app.route('/search/page/<int:page>')
 @login_required
-def search():
-    query = request.args.get('q', '').strip()
+def search(page=1):
+    query = request.args.get('q', '').strip().lower()
     if not query:
-        flash('Please enter a search term', 'warning')
         return redirect(url_for('index'))
     
     entries = load_diary_entries()
-    users_data = load_users()
-    
-    # Search in content and respect privacy settings
     search_results = []
+    
     for entry in entries:
-        # Check if entry's content contains the query (case insensitive)
-        if query.lower() in entry['content'].lower():
+        # Check if the query is in the content
+        if (query in entry['content'].lower() or 
+            # Or if the query matches any hashtag
+            any(query in hashtag.lower() for hashtag in entry.get('hashtags', []))):
+            
             # Include the entry if:
             # 1. It belongs to the current user, OR
             # 2. It's not private, OR
@@ -585,12 +648,34 @@ def search():
                 current_user.is_admin):
                 search_results.append(entry)
     
+    # Sort results by timestamp (newest first)
     search_results.sort(key=lambda x: x['timestamp'], reverse=True)
     
+    # Implement pagination
+    entries_per_page = app.config['ENTRIES_PER_PAGE']
+    total_entries = len(search_results)
+    total_pages = (total_entries + entries_per_page - 1) // entries_per_page  # Ceiling division
+    
+    # Ensure page is within valid range
+    if page < 1:
+        page = 1
+    elif page > total_pages and total_pages > 0:
+        page = total_pages
+    
+    # Get entries for current page
+    start_idx = (page - 1) * entries_per_page
+    end_idx = min(start_idx + entries_per_page, total_entries)
+    paginated_results = search_results[start_idx:end_idx]
+    
+    # Get all users for displaying profile info
+    users = load_users()
+    
     return render_template('search_results.html', 
-                          query=query,
-                          entries=search_results, 
-                          users=users_data)
+                          query=query, 
+                          entries=paginated_results, 
+                          users=users,
+                          current_page=page,
+                          total_pages=total_pages)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 

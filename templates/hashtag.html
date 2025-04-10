@@ -319,12 +319,41 @@
         {% else %}
             <div class="text-center py-5">
                 <i class="fas fa-hashtag fa-4x text-muted mb-3"></i>
-                <h3>No entries with #{{ hashtag }}</h3>
-                <p class="text-muted">There are no diary entries with this hashtag yet.</p>
-                <a href="/" class="btn btn-primary mt-3">
-                    <i class="fas fa-home me-2"></i>Back to Home
-                </a>
+                <h3>No entries with #{{ tag }}</h3>
+                <p class="text-muted">There are no entries with this hashtag yet.</p>
             </div>
+        {% endif %}
+        
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mt-4">
+                <!-- Previous Page -->
+                <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('view_hashtag', tag=tag, page=current_page-1) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                
+                <!-- Page Numbers -->
+                {% set start_page = [current_page - 2, 1] | max %}
+                {% set end_page = [start_page + 4, total_pages + 1] | min %}
+                {% set start_page = [end_page - 5, 1] | max %}
+                
+                {% for page_num in range(start_page, end_page) %}
+                    <li class="page-item {% if page_num == current_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('view_hashtag', tag=tag, page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                {% endfor %}
+                
+                <!-- Next Page -->
+                <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('view_hashtag', tag=tag, page=current_page+1) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
         {% endif %}
     </div>
     

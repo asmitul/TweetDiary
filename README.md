@@ -17,6 +17,7 @@ TweetDiary is a web application that provides a private Twitter-like experience 
   - Comment on entries
   - Use hashtags to categorize and search your entries
   - Edit or delete entries
+  - Pagination for browsing large collections of entries
 
 - **Social Features**
   - View entries from other users (if sharing is enabled)
@@ -29,6 +30,12 @@ TweetDiary is a web application that provides a private Twitter-like experience 
   - Responsive design works on desktop and mobile
   - Real-time character counter
   - Interactive comments section
+  - Efficient pagination controls
+
+- **Multilingual Support**
+  - UTF-8 encoding throughout the application
+  - Support for complex scripts and non-Latin characters
+  - Compatible with languages like Uyghur, Arabic, Chinese, and more
 
 ## Prerequisites
 

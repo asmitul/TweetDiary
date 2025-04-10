@@ -227,11 +227,43 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div class="no-results">
-                <i class="bi bi-search" style="font-size: 3rem;"></i>
-                <h4>No results found</h4>
-                <p>Try searching for different terms or hashtags.</p>
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h3>No results found</h3>
+                <p class="text-muted">No entries matching "{{ query }}" were found.</p>
             </div>
+        {% endif %}
+        
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mt-4">
+                <!-- Previous Page -->
+                <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('search', page=current_page-1, q=query) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                
+                <!-- Page Numbers -->
+                {% set start_page = [current_page - 2, 1] | max %}
+                {% set end_page = [start_page + 4, total_pages + 1] | min %}
+                {% set start_page = [end_page - 5, 1] | max %}
+                
+                {% for page_num in range(start_page, end_page) %}
+                    <li class="page-item {% if page_num == current_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('search', page=page_num, q=query) }}">{{ page_num }}</a>
+                    </li>
+                {% endfor %}
+                
+                <!-- Next Page -->
+                <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('search', page=current_page+1, q=query) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
         {% endif %}
     </div>
 
