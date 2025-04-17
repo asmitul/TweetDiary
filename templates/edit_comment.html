@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Comment - TweetDiary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 650px;
+            margin-top: 20px;
+            margin-bottom: 50px;
+        }
+        .edit-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .edit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        .edit-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        .edit-textarea {
+            resize: none;
+            width: 100%;
+            border: 1px solid #e1e8ed;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 1.1rem;
+            min-height: 100px;
+            margin-bottom: 15px;
+        }
+        .edit-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e1e8ed;
+        }
+        .entry-content {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="edit-card">
+            <div class="edit-header">
+                <h1 class="edit-title">Edit Comment</h1>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </a>
+            </div>
+            
+            <div class="entry-content">
+                <p>Original entry: {{ entry.content }}</p>
+            </div>
+            
+            <form action="{{ url_for('edit_comment', entry_id=entry.id, comment_id=comment.id) }}" method="post">
+                <textarea class="edit-textarea" name="comment_content" id="comment-textarea" required>{{ comment.content }}</textarea>
+                
+                <div class="edit-footer">
+                    <div class="char-counter" id="char-counter">{{ comment.content|length }}/280</div>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Character counter for comment textarea
+        const textarea = document.getElementById('comment-textarea');
+        const counter = document.getElementById('char-counter');
+        
+        textarea.addEventListener('input', function() {
+            counter.textContent = `${this.value.length}/280`;
+        });
+    </script>
+</body>
+</html> 

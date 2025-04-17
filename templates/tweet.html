@@ -112,16 +112,36 @@
         }
         .comment-header {
             display: flex;
-            justify-content: space-between;
+            align-items: center;
             margin-bottom: 5px;
         }
         .comment-username {
-            font-weight: 600;
-            font-size: 0.9rem;
+            font-weight: bold;
+            margin-right: 10px;
         }
         .comment-timestamp {
             color: #657786;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+        }
+        .comment-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+        .comment-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-left: 8px;
+            padding: 0;
+            color: #657786;
+        }
+        .comment-action:hover {
+            color: #1da1f2;
+        }
+        .comment-action.text-danger:hover {
+            color: #e0245e;
         }
         .comment-content {
             font-size: 0.95rem;
@@ -332,6 +352,18 @@
                             <div class="comment-header">
                                 <span class="comment-username">{{ users[comment.user_id].username }}</span>
                                 <span class="comment-timestamp">{{ comment.timestamp.split('T')[0] }} {{ comment.timestamp.split('T')[1][:5] }}</span>
+                                {% if comment.user_id == current_user.id or current_user.is_admin %}
+                                <div class="comment-actions">
+                                    <a href="{{ url_for('edit_comment', entry_id=entry.id, comment_id=comment.id) }}" class="comment-action text-primary">
+                                        <i class="far fa-edit"></i>
+                                    </a>
+                                    <form action="{{ url_for('delete_comment', entry_id=entry.id, comment_id=comment.id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this comment?');">
+                                        <button type="submit" class="comment-action text-danger">
+                                            <i class="far fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="comment-content">{{ comment.content }}</div>
                         </div>

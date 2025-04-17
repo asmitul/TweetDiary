@@ -440,6 +440,83 @@ def add_comment(entry_id):
     
     return redirect(url_for('index'))
 
+@app.route('/edit_comment/<entry_id>/<comment_id>', methods=['GET', 'POST'])
+@login_required
+def edit_comment(entry_id, comment_id):
+    entries = load_diary_entries()
+    
+    # Find the entry and comment
+    target_entry = None
+    target_comment = None
+    
+    for entry in entries:
+        if entry['id'] == entry_id:
+            target_entry = entry
+            for comment in entry['comments']:
+                if comment['id'] == comment_id:
+                    target_comment = comment
+                    break
+            break
+    
+    if not target_entry or not target_comment:
+        flash('Comment not found', 'danger')
+        return redirect(url_for('index'))
+    
+    # Check if the user is the comment owner or admin
+    if target_comment['user_id'] != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to edit this comment', 'danger')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        # Update the comment
+        new_content = request.form.get('comment_content', '').strip()
+        if not new_content:
+            flash('Comment cannot be empty', 'danger')
+        else:
+            target_comment['content'] = new_content
+            # No need to update timestamp, we'll leave it as the original
+            save_diary_entries(entries)
+            flash('Comment updated successfully', 'success')
+        
+        # Check if the request is coming from the tweet page
+        referrer = request.referrer
+        if referrer and '/tweet/' in referrer:
+            return redirect(url_for('view_tweet', entry_id=entry_id))
+        
+        return redirect(url_for('index'))
+    
+    # GET request - return the edit form
+    return render_template('edit_comment.html', entry=target_entry, comment=target_comment)
+
+@app.route('/delete_comment/<entry_id>/<comment_id>', methods=['POST'])
+@login_required
+def delete_comment(entry_id, comment_id):
+    entries = load_diary_entries()
+    
+    # Find the entry and comment
+    for entry in entries:
+        if entry['id'] == entry_id:
+            for i, comment in enumerate(entry['comments']):
+                if comment['id'] == comment_id:
+                    # Check if the user is the comment owner or admin
+                    if comment['user_id'] != current_user.id and not current_user.is_admin:
+                        flash('You do not have permission to delete this comment', 'danger')
+                        return redirect(url_for('index'))
+                    
+                    # Remove the comment
+                    entry['comments'].pop(i)
+                    save_diary_entries(entries)
+                    flash('Comment deleted successfully', 'success')
+                    break
+            break
+    
+    # Check if the request is coming from the tweet page
+    referrer = request.referrer
+    if referrer and '/tweet/' in referrer:
+        return redirect(url_for('view_tweet', entry_id=entry_id))
+    
+    return redirect(url_for('index'))
+
 @app.route('/delete_entry/<entry_id>', methods=['POST'])
 @login_required
 def delete_entry(entry_id):
