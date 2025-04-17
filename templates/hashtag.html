@@ -280,6 +280,12 @@
                         </a>
                     </li>
                 </ul>
+                <form class="d-flex ms-auto" action="{{ url_for('search') }}" method="get">
+                    <input class="form-control me-2" type="search" name="q" placeholder="Search entries or #hashtags" aria-label="Search">
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </nav>
