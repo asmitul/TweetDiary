@@ -96,6 +96,9 @@
             margin-bottom: 15px;
             white-space: pre-wrap;
         }
+        .entry-content a:hover {
+            color: #1DA1F2 !important;
+        }
         .entry-image {
             max-width: 100%;
             border-radius: 15px;
@@ -343,7 +346,11 @@
                         </div>
                     </div>
                     
-                    <div class="entry-content">{{ entry.content }}</div>
+                    <div class="entry-content">
+                        <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">
+                            {{ entry.content }}
+                        </a>
+                    </div>
                     
                     {% if entry.image %}
                         <img src="{{ url_for('media_file', filename=entry.image) }}" class="entry-image" alt="Entry image">

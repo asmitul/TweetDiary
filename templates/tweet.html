@@ -3,50 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>#{{ hashtag }} - TweetDiary</title>
+    <title>Tweet - TweetDiary</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             background-color: #f8f9fa;
+            font-family: 'Noto Sans', 'Noto Sans Arabic', sans-serif;
         }
         .container {
             max-width: 650px;
             margin-top: 20px;
             margin-bottom: 50px;
         }
-        .hashtag-header {
-            background-color: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-        }
-        .hashtag-icon {
-            font-size: 2rem;
-            color: #1DA1F2;
-            margin-right: 15px;
-        }
-        .hashtag-title {
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin-bottom: 0;
-        }
-        .entry-card {
+        .tweet-card {
             background-color: white;
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 15px;
-            transition: all 0.2s ease;
         }
-        .entry-card:hover {
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        .entry-header {
+        .tweet-header {
             display: flex;
             align-items: flex-start;
             margin-bottom: 10px;
@@ -58,36 +35,33 @@
             object-fit: cover;
             margin-right: 12px;
         }
-        .entry-user {
+        .tweet-user {
             display: flex;
             flex-direction: column;
         }
-        .entry-username {
+        .tweet-username {
             font-weight: bold;
         }
-        .entry-timestamp {
+        .tweet-timestamp {
             color: #657786;
             font-size: 0.8rem;
         }
-        .entry-content {
-            font-size: 1rem;
+        .tweet-content {
+            font-size: 1.2rem;
             margin-bottom: 15px;
             white-space: pre-wrap;
         }
-        .entry-content a:hover {
-            color: #1DA1F2 !important;
-        }
-        .entry-image {
+        .tweet-image {
             max-width: 100%;
             border-radius: 15px;
             margin-bottom: 15px;
             cursor: pointer;
             transition: transform 0.2s;
         }
-        .entry-image:hover {
+        .tweet-image:hover {
             transform: scale(1.02);
         }
-        .entry-actions {
+        .tweet-actions {
             display: flex;
             justify-content: space-between;
             color: #657786;
@@ -173,14 +147,9 @@
             justify-content: center;
             font-weight: bold;
         }
-        .comment-toggle {
-            cursor: pointer;
+        .back-button {
+            margin-bottom: 15px;
         }
-        .hashtag-link {
-            color: #1DA1F2;
-            text-decoration: none;
-        }
-        
         /* Fullscreen Modal Styles */
         .fullscreen-modal {
             display: none;
@@ -276,141 +245,102 @@
             {% endif %}
         {% endwith %}
         
-        <div class="hashtag-header">
-            <div class="hashtag-icon">
-                <i class="fas fa-hashtag"></i>
-            </div>
-            <h1 class="hashtag-title">{{ hashtag }}</h1>
+        <div class="back-button">
+            <a href="javascript:history.back()" class="btn btn-outline-primary btn-sm rounded-pill">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
         </div>
         
-        <!-- Entries Feed -->
-        {% if entries %}
-            {% for entry in entries %}
-                <div class="entry-card">
-                    <div class="entry-header">
-                        {% if users[entry.user_id].get('profile_pic') %}
-                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
-                                <img src="{{ url_for('media_file', filename=users[entry.user_id].profile_pic) }}" class="user-avatar" alt="{{ users[entry.user_id].username }}">
-                            </a>
-                        {% else %}
-                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
-                                <div class="user-avatar default-avatar">
-                                    {{ users[entry.user_id].username[0] | upper }}
-                                </div>
-                            </a>
-                        {% endif %}
-                        <div class="entry-user">
-                            <a href="{{ url_for('user_profile', user_id=entry.user_id) }}" class="text-decoration-none text-dark">
-                                <span class="entry-username">{{ users[entry.user_id].username }}</span>
-                            </a>
-                            <span class="entry-timestamp">{{ entry.timestamp.split('T')[0] }} at {{ entry.timestamp.split('T')[1][:5] }}</span>
+        <!-- Tweet Details -->
+        <div class="tweet-card">
+            <div class="tweet-header">
+                {% if users[entry.user_id].get('profile_pic') %}
+                    <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
+                        <img src="{{ url_for('media_file', filename=users[entry.user_id].profile_pic) }}" class="user-avatar" alt="{{ users[entry.user_id].username }}">
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('user_profile', user_id=entry.user_id) }}">
+                        <div class="user-avatar default-avatar">
+                            {{ users[entry.user_id].username[0] | upper }}
                         </div>
-                    </div>
-                    
-                    <div class="entry-content">
-                        <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">
-                            {{ entry.content | replace('#' + hashtag, '<span class="hashtag-link">#' + hashtag + '</span>') | safe }}
+                    </a>
+                {% endif %}
+                <div class="tweet-user">
+                    <a href="{{ url_for('user_profile', user_id=entry.user_id) }}" class="text-decoration-none text-dark">
+                        <span class="tweet-username">{{ users[entry.user_id].username }}</span>
+                    </a>
+                    <span class="tweet-timestamp">{{ entry.timestamp.split('T')[0] }} at {{ entry.timestamp.split('T')[1][:5] }}</span>
+                    {% if entry.is_private %}
+                        <span class="badge bg-secondary rounded-pill">
+                            <i class="fas fa-lock me-1"></i>Private
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="tweet-content">{{ entry.content }}</div>
+            
+            {% if entry.image %}
+                <img src="{{ url_for('media_file', filename=entry.image) }}" class="tweet-image" alt="Tweet image">
+            {% endif %}
+            
+            <div class="tweet-actions">
+                <div>
+                    <form action="{{ url_for('like_entry', entry_id=entry.id) }}" method="post" class="d-inline">
+                        <button type="submit" class="action-button">
+                            {% if current_user.id in entry.likes %}
+                                <i class="fas fa-heart action-icon action-liked"></i>
+                            {% else %}
+                                <i class="far fa-heart action-icon"></i>
+                            {% endif %}
+                            <span>{{ entry.likes|length }}</span>
+                        </button>
+                    </form>
+                    <span class="action-button">
+                        <i class="far fa-comment action-icon"></i>
+                        <span>{{ entry.comments|length }}</span>
+                    </span>
+                </div>
+                
+                <div>
+                    {% if entry.user_id == current_user.id %}
+                        <a href="{{ url_for('edit_entry', entry_id=entry.id) }}" class="action-button text-primary">
+                            <i class="far fa-edit"></i>
                         </a>
-                    </div>
-                    
-                    {% if entry.image %}
-                        <img src="{{ url_for('media_file', filename=entry.image) }}" class="entry-image" alt="Entry image">
                     {% endif %}
                     
-                    <div class="entry-actions">
-                        <div>
-                            <form action="{{ url_for('like_entry', entry_id=entry.id) }}" method="post" class="d-inline">
-                                <button type="submit" class="action-button">
-                                    {% if current_user.id in entry.likes %}
-                                        <i class="fas fa-heart action-icon action-liked"></i>
-                                    {% else %}
-                                        <i class="far fa-heart action-icon"></i>
-                                    {% endif %}
-                                    <span>{{ entry.likes|length }}</span>
-                                </button>
-                            </form>
-                            <span class="action-button comment-toggle" data-comment-id="comments-{{ entry.id }}">
-                                <i class="far fa-comment action-icon"></i>
-                                <span>{{ entry.comments|length }}</span>
-                            </span>
-                        </div>
-                        
-                        <div>
-                            {% if entry.user_id == current_user.id %}
-                                <a href="{{ url_for('edit_entry', entry_id=entry.id) }}" class="action-button text-primary">
-                                    <i class="far fa-edit"></i>
-                                </a>
-                            {% endif %}
-                            
-                            {% if entry.user_id == current_user.id or current_user.is_admin %}
-                                <form action="{{ url_for('delete_entry', entry_id=entry.id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this entry?');">
-                                    <button type="submit" class="action-button text-danger">
-                                        <i class="far fa-trash-alt"></i>
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="comment-section" id="comments-{{ entry.id }}" style="display: none;">
-                        <form action="{{ url_for('add_comment', entry_id=entry.id) }}" method="post" class="comment-form">
-                            <input type="text" name="comment" class="comment-input" placeholder="Add a comment..." required>
-                            <button type="submit" class="btn btn-sm btn-primary rounded-pill">Reply</button>
+                    {% if entry.user_id == current_user.id or current_user.is_admin %}
+                        <form action="{{ url_for('delete_entry', entry_id=entry.id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this entry?');">
+                            <button type="submit" class="action-button text-danger">
+                                <i class="far fa-trash-alt"></i>
+                            </button>
                         </form>
-                        
-                        {% if entry.comments %}
-                            {% for comment in entry.comments|sort(attribute='timestamp', reverse=true) %}
-                                <div class="comment-item">
-                                    <div class="comment-header">
-                                        <span class="comment-username">{{ users[comment.user_id].username }}</span>
-                                        <span class="comment-timestamp">{{ comment.timestamp.split('T')[0] }} {{ comment.timestamp.split('T')[1][:5] }}</span>
-                                    </div>
-                                    <div class="comment-content">{{ comment.content }}</div>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
+                    {% endif %}
                 </div>
-            {% endfor %}
-        {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-hashtag fa-4x text-muted mb-3"></i>
-                <h3>No entries with #{{ tag }}</h3>
-                <p class="text-muted">There are no entries with this hashtag yet.</p>
             </div>
-        {% endif %}
-        
-        <!-- Pagination Controls -->
-        {% if total_pages > 1 %}
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center mt-4">
-                <!-- Previous Page -->
-                <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('view_hashtag', tag=tag, page=current_page-1) }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
+            
+            <div class="comment-section">
+                <h5>Comments</h5>
+                <form action="{{ url_for('add_comment', entry_id=entry.id) }}" method="post" class="comment-form">
+                    <input type="text" name="comment" class="comment-input" placeholder="Add a comment..." required>
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill">Reply</button>
+                </form>
                 
-                <!-- Page Numbers -->
-                {% set start_page = [current_page - 2, 1] | max %}
-                {% set end_page = [start_page + 4, total_pages + 1] | min %}
-                {% set start_page = [end_page - 5, 1] | max %}
-                
-                {% for page_num in range(start_page, end_page) %}
-                    <li class="page-item {% if page_num == current_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('view_hashtag', tag=tag, page=page_num) }}">{{ page_num }}</a>
-                    </li>
-                {% endfor %}
-                
-                <!-- Next Page -->
-                <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('view_hashtag', tag=tag, page=current_page+1) }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        {% endif %}
+                {% if entry.comments %}
+                    {% for comment in entry.comments|sort(attribute='timestamp', reverse=true) %}
+                        <div class="comment-item">
+                            <div class="comment-header">
+                                <span class="comment-username">{{ users[comment.user_id].username }}</span>
+                                <span class="comment-timestamp">{{ comment.timestamp.split('T')[0] }} {{ comment.timestamp.split('T')[1][:5] }}</span>
+                            </div>
+                            <div class="comment-content">{{ comment.content }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No comments yet. Be the first to comment!</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
     
     <!-- Fullscreen Image Modal -->
@@ -433,23 +363,8 @@
                 }, 2500);
             });
             
-            // Comment section toggle
-            const commentToggles = document.querySelectorAll('.comment-toggle');
-            commentToggles.forEach(toggle => {
-                toggle.addEventListener('click', function() {
-                    const commentSectionId = this.getAttribute('data-comment-id');
-                    const commentSection = document.getElementById(commentSectionId);
-                    
-                    if (commentSection.style.display === 'none') {
-                        commentSection.style.display = 'block';
-                    } else {
-                        commentSection.style.display = 'none';
-                    }
-                });
-            });
-            
             // Fullscreen image functionality
-            const entryImages = document.querySelectorAll('.entry-image');
+            const entryImages = document.querySelectorAll('.tweet-image');
             const fullscreenModal = document.getElementById('fullscreenModal');
             const fullscreenImage = document.getElementById('fullscreenImage');
             const closeModal = document.querySelector('.close-modal');

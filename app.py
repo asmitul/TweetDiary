@@ -400,6 +400,11 @@ def like_entry(entry_id):
             save_diary_entries(entries)
             break
     
+    # Check if the request is coming from the tweet page
+    referrer = request.referrer
+    if referrer and '/tweet/' in referrer:
+        return redirect(url_for('view_tweet', entry_id=entry_id))
+    
     return redirect(url_for('index'))
 
 @app.route('/add_comment/<entry_id>', methods=['POST'])
@@ -428,6 +433,11 @@ def add_comment(entry_id):
             flash('Comment added', 'success')
             break
     
+    # Check if the request is coming from the tweet page
+    referrer = request.referrer
+    if referrer and '/tweet/' in referrer:
+        return redirect(url_for('view_tweet', entry_id=entry_id))
+    
     return redirect(url_for('index'))
 
 @app.route('/delete_entry/<entry_id>', methods=['POST'])
@@ -445,10 +455,22 @@ def delete_entry(entry_id):
                     if os.path.exists(image_path):
                         os.remove(image_path)
                 
+                # Remember the user ID before removing the entry
+                user_id = entry['user_id']
+                
                 # Remove the entry
                 entries.pop(i)
                 save_diary_entries(entries)
                 flash('Entry deleted', 'success')
+                
+                # Check if the request is coming from the tweet page
+                referrer = request.referrer
+                if referrer and '/tweet/' in referrer:
+                    return redirect(url_for('index'))
+                
+                # Check if it's from a user profile page
+                if referrer and '/user/' in referrer:
+                    return redirect(url_for('user_profile', user_id=user_id))
             else:
                 flash('You do not have permission to delete this entry', 'danger')
             break
@@ -676,6 +698,40 @@ def search(page=1):
                           users=users,
                           current_page=page,
                           total_pages=total_pages)
+
+@app.route('/tweet/<entry_id>')
+@login_required
+def view_tweet(entry_id):
+    entries = load_diary_entries()
+    
+    # Find the entry
+    target_entry = None
+    for entry in entries:
+        if entry['id'] == entry_id:
+            target_entry = entry
+            break
+    
+    if not target_entry:
+        flash('Tweet not found', 'danger')
+        return redirect(url_for('index'))
+    
+    # Check if user is authorized to view this entry
+    is_authorized = (
+        target_entry['user_id'] == current_user.id or 
+        not target_entry.get('is_private', False) or 
+        current_user.is_admin
+    )
+    
+    if not is_authorized:
+        flash('You do not have permission to view this tweet', 'danger')
+        return redirect(url_for('index'))
+    
+    # Get all users for displaying profile info
+    users = load_users()
+    
+    return render_template('tweet.html', 
+                          entry=target_entry,
+                          users=users)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
