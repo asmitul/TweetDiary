@@ -308,9 +308,7 @@
                     </div>
                     
                     <div class="entry-content">
-                        <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">
-                            {{ entry.content | replace('#' + hashtag, '<span class="hashtag-link">#' + hashtag + '</span>') | safe }}
-                        </a>
+                        <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">{{ entry.content | replace('#' + hashtag, '<span class="hashtag-link">#' + hashtag + '</span>') | safe }}</a>
                     </div>
                     
                     {% if entry.image %}

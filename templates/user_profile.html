@@ -347,9 +347,7 @@
                     </div>
                     
                     <div class="entry-content">
-                        <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">
-                            {{ entry.content }}
-                        </a>
+                        <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">{{ entry.content }}</a>
                     </div>
                     
                     {% if entry.image %}
