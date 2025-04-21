@@ -98,8 +98,9 @@
             margin-bottom: 15px;
             cursor: pointer;
             transition: transform 0.2s;
-            height: 100%;
-            object-fit: cover;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
         }
         .entry-image:hover {
             transform: scale(1.02);
@@ -246,6 +247,7 @@
             max-width: 90%;
             max-height: 90%;
             object-fit: contain;
+            margin: auto;
         }
         
         .close-modal {
@@ -267,22 +269,39 @@
             border-radius: 15px;
             overflow: hidden;
             position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .single-image .image-container {
             width: 100%;
-            max-height: 400px;
+            max-height: none;
         }
         .two-images .image-container {
             width: calc(50% - 5px);
-            height: 250px;
+            aspect-ratio: 16/9;
         }
         .three-images .image-container {
             width: calc(33.33% - 7px);
-            height: 200px;
+            aspect-ratio: 1/1;
         }
         .four-images .image-container {
             width: calc(50% - 5px);
-            height: 200px;
+            aspect-ratio: 1/1;
+        }
+        
+        /* Media query for small devices (mobile) */
+        @media (max-width: 576px) {
+            .three-images .image-container {
+                width: calc(50% - 5px);
+            }
+            .three-images .image-container:last-child {
+                width: 100%;
+                margin-top: 10px;
+            }
+            .four-images .image-container {
+                width: calc(50% - 5px);
+            }
         }
         .more-images {
             position: absolute;
@@ -686,7 +705,8 @@
             
             // Open fullscreen modal when image is clicked
             entryImages.forEach(image => {
-                image.addEventListener('click', function() {
+                image.addEventListener('click', function(e) {
+                    e.preventDefault();
                     fullscreenImage.src = this.src;
                     fullscreenModal.style.display = 'block';
                     document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
