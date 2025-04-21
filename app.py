@@ -478,12 +478,8 @@ def edit_comment(entry_id, comment_id):
             save_diary_entries(entries)
             flash('Comment updated successfully', 'success')
         
-        # Check if the request is coming from the tweet page
-        referrer = request.referrer
-        if referrer and '/tweet/' in referrer:
-            return redirect(url_for('view_tweet', entry_id=entry_id))
-        
-        return redirect(url_for('index'))
+        # Always redirect back to the tweet page after editing a comment
+        return redirect(url_for('view_tweet', entry_id=entry_id))
     
     # GET request - return the edit form
     return render_template('edit_comment.html', entry=target_entry, comment=target_comment)
