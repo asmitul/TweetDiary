@@ -329,7 +329,7 @@
                             <a href="{{ url_for('user_profile', user_id=entry.user_id) }}" class="text-decoration-none text-dark">
                                 <span class="entry-username">{{ users[entry.user_id].username }}</span>
                             </a>
-                            <span class="entry-timestamp">{{ entry.timestamp.split('T')[0] }} at {{ entry.timestamp.split('T')[1][:5] }}</span>
+                            <span class="entry-timestamp">{{ entry.timestamp|istanbul_time }}</span>
                         </div>
                     </div>
                     
@@ -387,7 +387,7 @@
                                 <div class="comment-item">
                                     <div class="comment-header">
                                         <span class="comment-username">{{ users[comment.user_id].username }}</span>
-                                        <span class="comment-timestamp">{{ comment.timestamp.split('T')[0] }} {{ comment.timestamp.split('T')[1][:5] }}</span>
+                                        <span class="comment-timestamp">{{ comment.timestamp|istanbul_time }}</span>
                                         {% if comment.user_id == current_user.id or current_user.is_admin %}
                                         <div class="comment-actions">
                                             <a href="{{ url_for('edit_comment', entry_id=entry.id, comment_id=comment.id) }}" class="comment-action text-primary">

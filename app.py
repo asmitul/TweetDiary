@@ -6,6 +6,7 @@ import json
 import shutil
 import re
 from datetime import datetime
+import pytz  # Add pytz for timezone support
 from flask import Flask, request, render_template, send_from_directory, redirect, url_for, jsonify, flash, session
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -21,6 +22,7 @@ app.config['DIARY_FILE'] = 'data/diary_entries.json'  # File to store diary entr
 app.config['SUPERADMIN_ID'] = 'admin'  # The ID of the superadmin user who can delete entries
 app.config['JSON_AS_ASCII'] = False  # Ensure JSON responses include non-ASCII characters
 app.config['ENTRIES_PER_PAGE'] = 10  # Number of entries to display per page
+app.config['TIMEZONE'] = 'Europe/Istanbul'  # Set default timezone to Istanbul
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -104,6 +106,25 @@ def load_user(user_id):
             profile_pic=user_data.get('profile_pic')
         )
     return None
+
+# Function to format timestamps to Istanbul timezone
+def format_timestamp(timestamp_str, format_str="%Y-%m-%d %H:%M"):
+    """Convert ISO timestamp string to Istanbul timezone and format it"""
+    # Parse the ISO timestamp
+    dt = datetime.fromisoformat(timestamp_str)
+    # If the datetime is naive (no timezone info), assume it's UTC
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=pytz.UTC)
+    # Convert to Istanbul timezone
+    istanbul_tz = pytz.timezone(app.config['TIMEZONE'])
+    istanbul_dt = dt.astimezone(istanbul_tz)
+    # Format the datetime
+    return istanbul_dt.strftime(format_str)
+
+# Add the formatter function to Jinja environment
+@app.template_filter('istanbul_time')
+def istanbul_time_filter(timestamp_str, format_str="%Y-%m-%d %H:%M"):
+    return format_timestamp(timestamp_str, format_str)
 
 @app.route('/')
 @app.route('/page/<int:page>')
@@ -352,7 +373,7 @@ def create_entry():
     
     # Create new diary entry
     entry_id = str(uuid.uuid4())
-    timestamp = datetime.now().isoformat()
+    timestamp = datetime.now(pytz.timezone(app.config['TIMEZONE'])).isoformat()
     
     # Handle multiple image uploads
     images = []
@@ -422,7 +443,7 @@ def add_comment(entry_id):
     for entry in entries:
         if entry['id'] == entry_id:
             comment_id = str(uuid.uuid4())
-            timestamp = datetime.now().isoformat()
+            timestamp = datetime.now(pytz.timezone(app.config['TIMEZONE'])).isoformat()
             
             entry['comments'].append({
                 'id': comment_id,
