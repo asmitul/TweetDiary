@@ -354,15 +354,17 @@ def create_entry():
     entry_id = str(uuid.uuid4())
     timestamp = datetime.now().isoformat()
     
-    # Handle image upload
-    image_filename = None
-    if 'entry_image' in request.files:
-        entry_image = request.files['entry_image']
-        if entry_image.filename:
-            filename = secure_filename(entry_image.filename)
-            image_id = str(uuid.uuid4())
-            image_filename = f"{image_id}_{filename}"
-            entry_image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+    # Handle multiple image uploads
+    images = []
+    if 'entry_images' in request.files:
+        entry_images = request.files.getlist('entry_images')
+        for image in entry_images:
+            if image.filename:
+                filename = secure_filename(image.filename)
+                image_id = str(uuid.uuid4())
+                image_filename = f"{image_id}_{filename}"
+                image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+                images.append(image_filename)
     
     # Extract hashtags
     hashtags = extract_hashtags(content)
@@ -372,7 +374,7 @@ def create_entry():
         'user_id': current_user.id,
         'content': content,
         'timestamp': timestamp,
-        'image': image_filename,
+        'images': images,  # Now storing a list of images
         'likes': [],
         'comments': [],
         'hashtags': hashtags,
@@ -523,10 +525,11 @@ def delete_entry(entry_id):
             # Check if user is the owner or an admin
             if entry['user_id'] == current_user.id or current_user.is_admin:
                 # Delete associated image if it exists
-                if entry.get('image'):
-                    image_path = os.path.join(app.config['UPLOAD_FOLDER'], entry['image'])
-                    if os.path.exists(image_path):
-                        os.remove(image_path)
+                if entry.get('images'):
+                    for image in entry['images']:
+                        image_path = os.path.join(app.config['UPLOAD_FOLDER'], image)
+                        if os.path.exists(image_path):
+                            os.remove(image_path)
                 
                 # Remember the user ID before removing the entry
                 user_id = entry['user_id']
@@ -639,21 +642,35 @@ def edit_entry(entry_id):
         target_entry['is_private'] = request.form.get('is_private') == 'on'
         
         # Handle image update
-        if 'entry_image' in request.files:
-            entry_image = request.files['entry_image']
-            if entry_image.filename:
-                # Remove old image if it exists
-                if target_entry.get('image'):
-                    old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], target_entry['image'])
-                    if os.path.exists(old_image_path):
-                        os.remove(old_image_path)
+        if 'entry_images' in request.files:
+            entry_images = request.files.getlist('entry_images')
+            if any(image.filename for image in entry_images):
+                # If we have new images, clear the old ones first
+                if target_entry.get('images'):
+                    for old_image in target_entry['images']:
+                        old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], old_image)
+                        if os.path.exists(old_image_path):
+                            os.remove(old_image_path)
                 
-                # Save new image
-                filename = secure_filename(entry_image.filename)
-                image_id = str(uuid.uuid4())
-                image_filename = f"{image_id}_{filename}"
-                entry_image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
-                target_entry['image'] = image_filename
+                # Save all new images
+                new_images = []
+                for image in entry_images:
+                    if image.filename:
+                        filename = secure_filename(image.filename)
+                        image_id = str(uuid.uuid4())
+                        image_filename = f"{image_id}_{filename}"
+                        image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+                        new_images.append(image_filename)
+                
+                target_entry['images'] = new_images
+        
+        # Handle backward compatibility with old entries that use 'image' instead of 'images'
+        if 'image' in target_entry and 'images' not in target_entry:
+            if target_entry['image']:
+                target_entry['images'] = [target_entry['image']]
+            else:
+                target_entry['images'] = []
+            del target_entry['image']
         
         # Save the updated entries
         save_diary_entries(entries)

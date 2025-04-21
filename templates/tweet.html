@@ -208,6 +208,27 @@
             font-weight: bold;
             cursor: pointer;
         }
+        .image-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .image-container {
+            width: calc(33.33% - 10px);
+            position: relative;
+        }
+        .single-image .image-container {
+            width: 100%;
+        }
+        .two-images .image-container {
+            width: calc(50% - 5px);
+        }
+        .three-images .image-container {
+            width: calc(33.33% - 6.67px);
+        }
+        .four-plus-images .image-container {
+            width: calc(25% - 7.5px);
+        }
     </style>
 </head>
 <body>
@@ -306,7 +327,16 @@
             
             <div class="tweet-content">{{ entry.content }}</div>
             
-            {% if entry.image %}
+            {% if entry.images %}
+                <div class="image-grid {% if entry.images|length == 1 %}single-image{% elif entry.images|length == 2 %}two-images{% elif entry.images|length == 3 %}three-images{% elif entry.images|length >= 4 %}four-plus-images{% endif %}">
+                    {% for image in entry.images %}
+                        <div class="image-container">
+                            <img src="{{ url_for('media_file', filename=image) }}" class="tweet-image" alt="Tweet image" data-image-index="{{ loop.index0 }}">
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elif entry.image %}
+                <!-- For backward compatibility with old tweets -->
                 <img src="{{ url_for('media_file', filename=entry.image) }}" class="tweet-image" alt="Tweet image">
             {% endif %}
             
