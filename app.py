@@ -844,5 +844,43 @@ def view_tweet(entry_id):
                           entry=target_entry,
                           users=users)
 
+# Function to check if file extension is allowed
+def allowed_file(filename, allowed_extensions=None):
+    if allowed_extensions is None:
+        allowed_extensions = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+@app.route('/upload_file', methods=['POST'])
+@login_required
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_id = str(uuid.uuid4())
+        file_filename = f"{file_id}_{filename}"  # Add unique ID to prevent filename conflicts
+        
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
+        
+        return jsonify({
+            'success': True,
+            'message': 'File uploaded successfully',
+            'filename': file_filename,
+            'url': url_for('media_file', filename=file_filename)
+        })
+    else:
+        return jsonify({'error': 'File type not allowed'}), 400
+
+@app.route('/upload')
+@login_required
+def upload_page():
+    return render_template('upload.html')
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
