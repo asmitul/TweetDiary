@@ -33,7 +33,7 @@ login_manager.login_view = 'login'
 login_manager.login_message = "Please login to access this page"
 
 # Create required directories if they don't exist
-for folder in [app.config['UPLOAD_FOLDER'], app.config['STATUS_FOLDER']]:
+for folder in [app.config['UPLOAD_FOLDER'], app.config['STATUS_FOLDER'], 'data']:
     os.makedirs(folder, exist_ok=True)
 
 # User class for Flask-Login
@@ -358,6 +358,9 @@ def profile():
         if 'profile_pic' in request.files:
             profile_pic = request.files['profile_pic']
             if profile_pic.filename:
+                if not is_image_file(profile_pic.filename):
+                    flash('Invalid image file type for profile picture.', 'danger')
+                    return redirect(url_for('profile'))
                 filename = secure_filename(profile_pic.filename)
                 pic_id = str(uuid.uuid4())
                 pic_filename = f"{pic_id}_{filename}"
@@ -710,38 +713,43 @@ def edit_entry(entry_id):
         # Handle file update
         if 'entry_images' in request.files:
             entry_files = request.files.getlist('entry_images')
-            if any(file.filename for file in entry_files):
-                # If we have new files, clear the old ones first
+            new_images_uploaded = any(file.filename and is_image_file(file.filename) for file in entry_files)
+            new_excalidraw_uploaded = any(file.filename and is_excalidraw_file(file.filename) for file in entry_files)
+
+            if new_images_uploaded:
+                # If new image files are being uploaded, clear old image files
                 if target_entry.get('images'):
                     for old_image in target_entry['images']:
                         old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], old_image)
                         if os.path.exists(old_image_path):
                             os.remove(old_image_path)
-                
+                target_entry['images'] = [] # Initialize for new images
+            
+            if new_excalidraw_uploaded:
+                # If new excalidraw files are being uploaded, clear old excalidraw files
                 if target_entry.get('excalidraw_files'):
                     for old_file in target_entry['excalidraw_files']:
                         old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], old_file)
                         if os.path.exists(old_file_path):
                             os.remove(old_file_path)
-                
-                # Save all new files
-                new_images = []
-                new_excalidraw_files = []
-                
-                for file in entry_files:
-                    if file.filename:
-                        filename = secure_filename(file.filename)
-                        file_id = str(uuid.uuid4())
-                        file_filename = f"{file_id}_{filename}"
-                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
-                        
-                        if is_image_file(filename):
-                            new_images.append(file_filename)
-                        elif is_excalidraw_file(filename):
-                            new_excalidraw_files.append(file_filename)
-                
-                target_entry['images'] = new_images
-                target_entry['excalidraw_files'] = new_excalidraw_files
+                target_entry['excalidraw_files'] = [] # Initialize for new excalidraw files
+            
+            # Save all new files
+            # Ensure these lists exist even if no new files of a type are uploaded, to avoid KeyErrors later if they were cleared
+            if 'images' not in target_entry: target_entry['images'] = []
+            if 'excalidraw_files' not in target_entry: target_entry['excalidraw_files'] = []
+
+            for file in entry_files:
+                if file.filename:
+                    filename = secure_filename(file.filename)
+                    file_id = str(uuid.uuid4())
+                    file_filename = f"{file_id}_{filename}"
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
+                    
+                    if is_image_file(filename):
+                        target_entry['images'].append(file_filename)
+                    elif is_excalidraw_file(filename):
+                        target_entry['excalidraw_files'].append(file_filename)
         
         # Handle backward compatibility with old entries that use 'image' instead of 'images'
         if 'image' in target_entry and 'images' not in target_entry:
