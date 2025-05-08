@@ -367,6 +367,31 @@
                 <img src="{{ url_for('media_file', filename=entry.image) }}" class="tweet-image" alt="Tweet image">
             {% endif %}
             
+            {% if entry.excalidraw_files %}
+            <div class="excalidraw-files mt-3">
+                <h5 class="mb-3">Excalidraw Files</h5>
+                {% for excalidraw_file in entry.excalidraw_files %}
+                    <div class="excalidraw-file-item mb-3 p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file-alt me-2 text-primary"></i>
+                                <span class="fw-bold">{{ excalidraw_file.split('_', 1)[1] }}</span>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('excalidraw_file', filename=excalidraw_file) }}" download class="btn btn-sm btn-outline-secondary me-2">
+                                    <i class="fas fa-download me-1"></i>Download
+                                </a>
+                                <a href="https://excalidraw.com/#json={{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}" 
+                                   target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in Excalidraw
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
             <div class="tweet-actions">
                 <div>
                     <form action="{{ url_for('like_entry', entry_id=entry.id) }}" method="post" class="d-inline">

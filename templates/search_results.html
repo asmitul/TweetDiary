@@ -329,8 +329,37 @@
                         <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">{{ entry.content }}</a>
                     </div>
                     
-                    {% if entry.image %}
+                    {% if entry.images %}
+                        <div class="image-grid {% if entry.images|length == 1 %}single-image{% elif entry.images|length == 2 %}two-images{% elif entry.images|length == 3 %}three-images{% elif entry.images|length >= 4 %}four-images{% endif %}">
+                            {% for image in entry.images[:4] %}
+                                <div class="image-container">
+                                    <img src="{{ url_for('media_file', filename=image) }}" class="entry-image" alt="Entry image" data-image-index="{{ loop.index0 }}" data-entry-id="{{ entry.id }}">
+                                </div>
+                            {% endfor %}
+                            {% if entry.images|length > 4 %}
+                                <div class="more-images">+{{ entry.images|length - 4 }} more</div>
+                            {% endif %}
+                        </div>
+                    {% elif entry.image %}
+                        <!-- For backward compatibility with old tweets -->
                         <img src="{{ url_for('media_file', filename=entry.image) }}" class="entry-image" alt="Entry image">
+                    {% endif %}
+                    
+                    {% if entry.excalidraw_files %}
+                    <div class="excalidraw-files mt-2">
+                        {% for excalidraw_file in entry.excalidraw_files %}
+                            <div class="excalidraw-file-item mb-2 p-2 border rounded">
+                                <i class="fas fa-file-alt me-2"></i>
+                                <a href="{{ url_for('excalidraw_file', filename=excalidraw_file) }}" download class="text-decoration-none">
+                                    Excalidraw: {{ excalidraw_file.split('_', 1)[1] }}
+                                </a>
+                                <a href="https://excalidraw.com/#json={{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}" 
+                                   target="_blank" class="btn btn-sm btn-outline-primary float-end">
+                                    <i class="fas fa-external-link-alt me-1"></i>Open in Excalidraw
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                     
                     <div class="entry-actions">

@@ -224,10 +224,28 @@
                         </div>
                     {% endif %}
                     
+                    {% if entry.excalidraw_files %}
+                        <p class="mt-3"><strong>Current Excalidraw Files:</strong></p>
+                        <div class="excalidraw-files mt-2">
+                            {% for excalidraw_file in entry.excalidraw_files %}
+                                <div class="excalidraw-file-item mb-2 p-2 border rounded">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    <a href="{{ url_for('excalidraw_file', filename=excalidraw_file) }}" download class="text-decoration-none">
+                                        Excalidraw: {{ excalidraw_file.split('_', 1)[1] }}
+                                    </a>
+                                    <a href="https://excalidraw.com/#json={{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}" 
+                                       target="_blank" class="btn btn-sm btn-outline-primary float-end">
+                                        <i class="fas fa-external-link-alt me-1"></i>Open in Excalidraw
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
                     <div class="mt-3">
-                        <label for="entry_images" class="form-label">Update Images (Optional):</label>
-                        <input type="file" id="entry_images" name="entry_images" accept="image/*" multiple class="form-control">
-                        <div class="form-text">Select new images to replace the current ones. Leave empty to keep the current images.</div>
+                        <label for="entry_images" class="form-label">Update Files (Optional):</label>
+                        <input type="file" id="entry_images" name="entry_images" accept="image/*,.excalidraw" multiple class="form-control">
+                        <div class="form-text">Select new images or Excalidraw files to replace the current ones. Leave empty to keep the current files.</div>
                     </div>
 
                     <div id="image-preview-container" class="image-preview-container mt-2" style="display: none;">
@@ -310,32 +328,46 @@
                 if (this.files.length > 0) {
                     previewContainer.style.display = 'block';
                     
-                    // Create previews for up to 10 images
+                    // Create previews for up to 10 files
                     const maxPreviewFiles = Math.min(this.files.length, 10);
+                    let imageCount = 0;
+                    let excalidrawCount = 0;
                     
                     for (let i = 0; i < maxPreviewFiles; i++) {
                         const file = this.files[i];
-                        const reader = new FileReader();
                         
-                        reader.onload = function(e) {
+                        if (file.name.toLowerCase().endsWith('.excalidraw')) {
+                            // For Excalidraw files, show a placeholder
+                            excalidrawCount++;
                             const previewDiv = document.createElement('div');
-                            previewDiv.className = 'image-preview-item';
-                            
-                            const img = document.createElement('img');
-                            img.src = e.target.result;
-                            img.alt = 'Image Preview';
-                            
-                            previewDiv.appendChild(img);
+                            previewDiv.className = 'p-2 border rounded mb-2';
+                            previewDiv.innerHTML = `<i class="fas fa-file-alt me-2"></i> ${file.name}`;
                             previewsDiv.appendChild(previewDiv);
-                        };
-                        
-                        reader.readAsDataURL(file);
+                        } else {
+                            // For images, show a preview
+                            imageCount++;
+                            const reader = new FileReader();
+                            
+                            reader.onload = function(e) {
+                                const previewDiv = document.createElement('div');
+                                previewDiv.className = 'image-preview-item';
+                                
+                                const img = document.createElement('img');
+                                img.src = e.target.result;
+                                img.alt = 'Image Preview';
+                                
+                                previewDiv.appendChild(img);
+                                previewsDiv.appendChild(previewDiv);
+                            };
+                            
+                            reader.readAsDataURL(file);
+                        }
                     }
                     
                     if (this.files.length > 10) {
                         const moreText = document.createElement('div');
                         moreText.className = 'text-muted mt-2';
-                        moreText.textContent = `+${this.files.length - 10} more images`;
+                        moreText.textContent = `+${this.files.length - 10} more files`;
                         previewsDiv.appendChild(moreText);
                     }
                 } else {

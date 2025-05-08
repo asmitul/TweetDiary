@@ -422,8 +422,8 @@
                         <label for="entry_images" class="action-button">
                             <i class="far fa-image text-primary"></i>
                         </label>
-                        <input type="file" id="entry_images" name="entry_images" accept="image/*" multiple style="display: none;">
-                        <span id="image-selected" class="small text-muted ms-2" style="display: none;"><span id="image-count">0</span> images selected</span>
+                        <input type="file" id="entry_images" name="entry_images" accept="image/*,.excalidraw" multiple style="display: none;">
+                        <span id="image-selected" class="small text-muted ms-2" style="display: none;"><span id="image-count">0</span> files selected</span>
                         
                         <div class="form-check ms-3">
                             <input class="form-check-input" type="checkbox" id="is_private" name="is_private">
@@ -476,7 +476,9 @@
                         <a href="{{ url_for('view_tweet', entry_id=entry.id) }}" class="text-decoration-none text-dark">{{ entry.content }}</a>
                     </div>
                     
-                    {% if entry.images %}
+                    {% if entry.images or entry.excalidraw_files %}
+                        <!-- Display images -->
+                        {% if entry.images %}
                         <div class="image-grid {% if entry.images|length == 1 %}single-image{% elif entry.images|length == 2 %}two-images{% elif entry.images|length == 3 %}three-images{% elif entry.images|length >= 4 %}four-images{% endif %}">
                             {% for image in entry.images[:4] %}
                                 <div class="image-container">
@@ -487,6 +489,25 @@
                                 <div class="more-images">+{{ entry.images|length - 4 }} more</div>
                             {% endif %}
                         </div>
+                        {% endif %}
+                        
+                        <!-- Display Excalidraw files -->
+                        {% if entry.excalidraw_files %}
+                        <div class="excalidraw-files mt-2">
+                            {% for excalidraw_file in entry.excalidraw_files %}
+                                <div class="excalidraw-file-item mb-2 p-2 border rounded">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    <a href="{{ url_for('excalidraw_file', filename=excalidraw_file) }}" download class="text-decoration-none">
+                                        Excalidraw: {{ excalidraw_file.split('_', 1)[1] }}
+                                    </a>
+                                    <a href="https://excalidraw.com/#json={{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}" 
+                                       target="_blank" class="btn btn-sm btn-outline-primary float-end">
+                                        <i class="fas fa-external-link-alt me-1"></i>Open in Excalidraw
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     {% elif entry.image %}
                         <!-- For backward compatibility with old tweets -->
                         <img src="{{ url_for('media_file', filename=entry.image) }}" class="entry-image" alt="Entry image">

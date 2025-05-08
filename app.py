@@ -23,6 +23,8 @@ app.config['SUPERADMIN_ID'] = 'admin'  # The ID of the superadmin user who can d
 app.config['JSON_AS_ASCII'] = False  # Ensure JSON responses include non-ASCII characters
 app.config['ENTRIES_PER_PAGE'] = 10  # Number of entries to display per page
 app.config['TIMEZONE'] = 'Europe/Istanbul'  # Set default timezone to Istanbul
+app.config['ALLOWED_IMAGE_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}  # Allowed image extensions
+app.config['ALLOWED_EXCALIDRAW_EXTENSIONS'] = {'excalidraw'}  # Allowed Excalidraw extensions
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -360,6 +362,16 @@ def extract_hashtags(content):
     hashtag_pattern = r'#(\w+)'
     return re.findall(hashtag_pattern, content, re.UNICODE)
 
+# Function to check if a file has an allowed extension
+def allowed_file(filename, allowed_extensions):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+def is_image_file(filename):
+    return allowed_file(filename, app.config['ALLOWED_IMAGE_EXTENSIONS'])
+
+def is_excalidraw_file(filename):
+    return allowed_file(filename, app.config['ALLOWED_EXCALIDRAW_EXTENSIONS'])
+
 @app.route('/create_entry', methods=['POST'])
 @login_required
 def create_entry():
@@ -375,17 +387,23 @@ def create_entry():
     entry_id = str(uuid.uuid4())
     timestamp = datetime.now(pytz.timezone(app.config['TIMEZONE'])).isoformat()
     
-    # Handle multiple image uploads
+    # Handle multiple image and Excalidraw file uploads
     images = []
+    excalidraw_files = []
+    
     if 'entry_images' in request.files:
         entry_images = request.files.getlist('entry_images')
-        for image in entry_images:
-            if image.filename:
-                filename = secure_filename(image.filename)
-                image_id = str(uuid.uuid4())
-                image_filename = f"{image_id}_{filename}"
-                image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
-                images.append(image_filename)
+        for file in entry_images:
+            if file.filename:
+                filename = secure_filename(file.filename)
+                file_id = str(uuid.uuid4())
+                file_filename = f"{file_id}_{filename}"
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
+                
+                if is_image_file(filename):
+                    images.append(file_filename)
+                elif is_excalidraw_file(filename):
+                    excalidraw_files.append(file_filename)
     
     # Extract hashtags
     hashtags = extract_hashtags(content)
@@ -395,7 +413,8 @@ def create_entry():
         'user_id': current_user.id,
         'content': content,
         'timestamp': timestamp,
-        'images': images,  # Now storing a list of images
+        'images': images,
+        'excalidraw_files': excalidraw_files,
         'likes': [],
         'comments': [],
         'hashtags': hashtags,
@@ -545,12 +564,19 @@ def delete_entry(entry_id):
         if entry['id'] == entry_id:
             # Check if user is the owner or an admin
             if entry['user_id'] == current_user.id or current_user.is_admin:
-                # Delete associated image if it exists
+                # Delete associated image files if they exist
                 if entry.get('images'):
                     for image in entry['images']:
                         image_path = os.path.join(app.config['UPLOAD_FOLDER'], image)
                         if os.path.exists(image_path):
                             os.remove(image_path)
+                
+                # Delete associated Excalidraw files if they exist
+                if entry.get('excalidraw_files'):
+                    for excalidraw_file in entry['excalidraw_files']:
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], excalidraw_file)
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
                 
                 # Remember the user ID before removing the entry
                 user_id = entry['user_id']
@@ -558,20 +584,20 @@ def delete_entry(entry_id):
                 # Remove the entry
                 entries.pop(i)
                 save_diary_entries(entries)
-                flash('Entry deleted', 'success')
                 
-                # Check if the request is coming from the tweet page
+                flash('Entry deleted successfully', 'success')
+                
+                # Redirect to user profile if coming from there
                 referrer = request.referrer
-                if referrer and '/tweet/' in referrer:
-                    return redirect(url_for('index'))
-                
-                # Check if it's from a user profile page
-                if referrer and '/user/' in referrer:
+                if referrer and f'/user/{user_id}' in referrer:
                     return redirect(url_for('user_profile', user_id=user_id))
+                
+                return redirect(url_for('index'))
             else:
                 flash('You do not have permission to delete this entry', 'danger')
-            break
+                return redirect(url_for('index'))
     
+    flash('Entry not found', 'danger')
     return redirect(url_for('index'))
 
 @app.route('/user/<user_id>')
@@ -662,28 +688,41 @@ def edit_entry(entry_id):
         # Update privacy setting
         target_entry['is_private'] = request.form.get('is_private') == 'on'
         
-        # Handle image update
+        # Handle file update
         if 'entry_images' in request.files:
-            entry_images = request.files.getlist('entry_images')
-            if any(image.filename for image in entry_images):
-                # If we have new images, clear the old ones first
+            entry_files = request.files.getlist('entry_images')
+            if any(file.filename for file in entry_files):
+                # If we have new files, clear the old ones first
                 if target_entry.get('images'):
                     for old_image in target_entry['images']:
                         old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], old_image)
                         if os.path.exists(old_image_path):
                             os.remove(old_image_path)
                 
-                # Save all new images
+                if target_entry.get('excalidraw_files'):
+                    for old_file in target_entry['excalidraw_files']:
+                        old_file_path = os.path.join(app.config['UPLOAD_FOLDER'], old_file)
+                        if os.path.exists(old_file_path):
+                            os.remove(old_file_path)
+                
+                # Save all new files
                 new_images = []
-                for image in entry_images:
-                    if image.filename:
-                        filename = secure_filename(image.filename)
-                        image_id = str(uuid.uuid4())
-                        image_filename = f"{image_id}_{filename}"
-                        image.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
-                        new_images.append(image_filename)
+                new_excalidraw_files = []
+                
+                for file in entry_files:
+                    if file.filename:
+                        filename = secure_filename(file.filename)
+                        file_id = str(uuid.uuid4())
+                        file_filename = f"{file_id}_{filename}"
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
+                        
+                        if is_image_file(filename):
+                            new_images.append(file_filename)
+                        elif is_excalidraw_file(filename):
+                            new_excalidraw_files.append(file_filename)
                 
                 target_entry['images'] = new_images
+                target_entry['excalidraw_files'] = new_excalidraw_files
         
         # Handle backward compatibility with old entries that use 'image' instead of 'images'
         if 'image' in target_entry and 'images' not in target_entry:
@@ -692,6 +731,10 @@ def edit_entry(entry_id):
             else:
                 target_entry['images'] = []
             del target_entry['image']
+        
+        # Ensure excalidraw_files field exists
+        if 'excalidraw_files' not in target_entry:
+            target_entry['excalidraw_files'] = []
         
         # Save the updated entries
         save_diary_entries(entries)
@@ -843,6 +886,12 @@ def view_tweet(entry_id):
     return render_template('tweet.html', 
                           entry=target_entry,
                           users=users)
+
+@app.route('/excalidraw/<filename>')
+@login_required
+def excalidraw_file(filename):
+    """Serve Excalidraw files with appropriate content type"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype='application/json')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
