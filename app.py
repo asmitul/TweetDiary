@@ -145,9 +145,11 @@ def index(page=1):
         # 1. It belongs to the current user, OR
         # 2. It's not private, OR
         # 3. Current user is an admin
-        if (entry['user_id'] == current_user.id or 
+        # 4. AND it's not archived (for any user)
+        if ((entry['user_id'] == current_user.id or 
             not entry.get('is_private', False) or 
-            current_user.is_admin):
+            current_user.is_admin) and
+            not entry.get('is_archived', False)):
             filtered_entries.append(entry)
     
     # Sort entries by timestamp (newest first)
@@ -418,7 +420,8 @@ def create_entry():
         'likes': [],
         'comments': [],
         'hashtags': hashtags,
-        'is_private': is_private
+        'is_private': is_private,
+        'is_archived': False
     }
     
     entries = load_diary_entries()
@@ -688,6 +691,10 @@ def edit_entry(entry_id):
         # Update privacy setting
         target_entry['is_private'] = request.form.get('is_private') == 'on'
         
+        # Ensure archive setting is preserved
+        if 'is_archived' not in target_entry:
+            target_entry['is_archived'] = False
+        
         # Handle file update
         if 'entry_images' in request.files:
             entry_files = request.files.getlist('entry_images')
@@ -923,6 +930,103 @@ def excalidraw_file(filename):
     except Exception as e:
         app.logger.error(f"Error serving Excalidraw file: {str(e)}")
         return str(e), 500
+
+@app.route('/archive_entry/<entry_id>', methods=['POST'])
+@login_required
+def archive_entry(entry_id):
+    entries = load_diary_entries()
+    
+    for entry in entries:
+        if entry['id'] == entry_id:
+            # Check if user is the owner or an admin
+            if entry['user_id'] == current_user.id or current_user.is_admin:
+                # Archive the entry
+                entry['is_archived'] = True
+                save_diary_entries(entries)
+                flash('Entry archived successfully', 'success')
+                
+                # Redirect to user profile if coming from there
+                referrer = request.referrer
+                if referrer and f'/user/{entry["user_id"]}' in referrer:
+                    return redirect(url_for('user_profile', user_id=entry['user_id']))
+                
+                return redirect(url_for('index'))
+            else:
+                flash('You do not have permission to archive this entry', 'danger')
+                return redirect(url_for('index'))
+    
+    flash('Entry not found', 'danger')
+    return redirect(url_for('index'))
+
+@app.route('/unarchive_entry/<entry_id>', methods=['POST'])
+@login_required
+def unarchive_entry(entry_id):
+    entries = load_diary_entries()
+    
+    for entry in entries:
+        if entry['id'] == entry_id:
+            # Check if user is the owner or an admin
+            if entry['user_id'] == current_user.id or current_user.is_admin:
+                # Unarchive the entry
+                entry['is_archived'] = False
+                save_diary_entries(entries)
+                flash('Entry unarchived successfully', 'success')
+                
+                # Redirect to user profile if coming from there
+                referrer = request.referrer
+                if referrer and f'/user/{entry["user_id"]}' in referrer:
+                    return redirect(url_for('user_profile', user_id=entry['user_id']))
+                elif referrer and '/archived' in referrer:
+                    return redirect(url_for('archived_entries'))
+                
+                return redirect(url_for('index'))
+            else:
+                flash('You do not have permission to unarchive this entry', 'danger')
+                return redirect(url_for('index'))
+    
+    flash('Entry not found', 'danger')
+    return redirect(url_for('index'))
+
+@app.route('/archived')
+@app.route('/archived/page/<int:page>')
+@login_required
+def archived_entries(page=1):
+    # Load all diary entries
+    entries = load_diary_entries()
+    
+    # Filter for archived entries that belong to the current user
+    archived_entries = []
+    for entry in entries:
+        if entry['user_id'] == current_user.id and entry.get('is_archived', False):
+            archived_entries.append(entry)
+    
+    # Sort entries by timestamp (newest first)
+    archived_entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    # Implement pagination
+    entries_per_page = app.config['ENTRIES_PER_PAGE']
+    total_entries = len(archived_entries)
+    total_pages = (total_entries + entries_per_page - 1) // entries_per_page  # Ceiling division
+    
+    # Ensure page is within valid range
+    if page < 1:
+        page = 1
+    elif page > total_pages and total_pages > 0:
+        page = total_pages
+    
+    # Get entries for current page
+    start_idx = (page - 1) * entries_per_page
+    end_idx = min(start_idx + entries_per_page, total_entries)
+    paginated_entries = archived_entries[start_idx:end_idx]
+    
+    # Get all users for displaying profile info
+    users = load_users()
+    
+    return render_template('archived.html', 
+                          entries=paginated_entries, 
+                          users=users,
+                          current_page=page,
+                          total_pages=total_pages)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
