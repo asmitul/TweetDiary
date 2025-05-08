@@ -407,10 +407,6 @@
                                 <a href="{{ url_for('excalidraw_file', filename=excalidraw_file) }}" download class="btn btn-sm btn-outline-secondary me-2">
                                     <i class="fas fa-download me-1"></i>Download
                                 </a>
-                                <a href="https://excalidraw.com/?scene-jsonurl={{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}"
-                                   target="_blank" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-external-link-alt me-1"></i>Open in Excalidraw
-                                </a>
                                 <button class="btn btn-sm btn-outline-success ms-2 preview-excalidraw" data-file="{{ excalidraw_file }}">
                                     <i class="fas fa-eye me-1"></i>Preview
                                 </button>
