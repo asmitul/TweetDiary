@@ -265,12 +265,22 @@
             border: none;
             border-radius: 8px;
             background-color: #f8f8f8;
+            z-index: 1;
         }
         .excalidraw-file-item {
             transition: all 0.2s ease;
         }
         .excalidraw-file-item:hover {
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .excalidraw-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(248, 248, 248, 0.9);
+            z-index: 2;
         }
     </style>
 </head>
@@ -408,11 +418,20 @@
                         </div>
                         <div class="excalidraw-preview-container" id="preview-{{ excalidraw_file }}" style="display: none;">
                             <div class="ratio ratio-16x9 mt-3 mb-2 border">
+                                <div class="excalidraw-loading bg-light d-flex align-items-center justify-content-center">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary mb-2" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mb-0">Loading Excalidraw...</p>
+                                    </div>
+                                </div>
                                 <iframe 
-                                    src="https://excalidraw.com/" 
+                                    src="about:blank" 
                                     title="Excalidraw Preview" 
                                     class="excalidraw-frame"
                                     data-file-url="{{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}"
+                                    style="display: none;"
                                     allowfullscreen>
                                 </iframe>
                             </div>
@@ -527,33 +546,31 @@
                         // Get the iframe
                         const iframe = previewContainer.querySelector('iframe');
                         const fileUrl = iframe.getAttribute('data-file-url');
+                        const loadingEl = previewContainer.querySelector('.excalidraw-loading');
                         
-                        // Only load the file if the iframe hasn't been loaded yet
+                        // Load Excalidraw with the file URL
                         if (!iframe.hasAttribute('data-loaded')) {
-                            // Set up a message listener to know when excalidraw is ready
-                            window.addEventListener('message', function loadExcalidrawFile(event) {
-                                if (event.source === iframe.contentWindow && event.data.type === 'excalidrawReady') {
-                                    // Fetch the file content
-                                    fetch(fileUrl)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            // Send the file data to the iframe
-                                            iframe.contentWindow.postMessage({
-                                                type: 'excalidrawLoadFromData',
-                                                data: data
-                                            }, '*');
-                                            
-                                            // Mark iframe as loaded
-                                            iframe.setAttribute('data-loaded', 'true');
-                                        })
-                                        .catch(error => {
-                                            console.error('Error loading Excalidraw file:', error);
-                                        });
-                                    
-                                    // Remove the event listener after handling
-                                    window.removeEventListener('message', loadExcalidrawFile);
-                                }
-                            });
+                            // Show loading indicator
+                            loadingEl.style.display = 'flex';
+                            iframe.style.display = 'none';
+                            
+                            // Set direct URL to Excalidraw with the file
+                            iframe.src = `https://excalidraw.com/?scene-jsonurl=${encodeURIComponent(fileUrl)}&viewModeEnabled=true`;
+                            
+                            // Handle iframe load event
+                            iframe.onload = function() {
+                                // Hide loading indicator and show iframe
+                                setTimeout(() => {
+                                    loadingEl.style.display = 'none';
+                                    iframe.style.display = 'block';
+                                    iframe.setAttribute('data-loaded', 'true');
+                                }, 1000); // Slight delay to ensure Excalidraw app is fully loaded
+                            };
+                            
+                            // Handle iframe error
+                            iframe.onerror = function() {
+                                loadingEl.innerHTML = '<div class="text-center text-danger"><i class="fas fa-exclamation-circle fa-2x mb-2"></i><p>Failed to load Excalidraw. <a href="' + fileUrl + '" target="_blank">Open file directly</a>.</p></div>';
+                            };
                             
                             // Update the button text
                             this.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Hide Preview';
