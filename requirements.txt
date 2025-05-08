@@ -4,3 +4,4 @@ gunicorn==23.0.0
 gevent==25.4.1
 flask-login==0.6.3
 pytz==2025.2
+python-magic

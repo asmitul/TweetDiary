@@ -11,6 +11,7 @@ from flask import Flask, request, render_template, send_from_directory, redirect
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+import magic
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -398,12 +399,25 @@ def create_entry():
                 filename = secure_filename(file.filename)
                 file_id = str(uuid.uuid4())
                 file_filename = f"{file_id}_{filename}"
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
-                
+                # Check MIME type before saving
+                file_bytes = file.read(2048)
+                file.seek(0)
+                mime = magic.from_buffer(file_bytes, mime=True)
                 if is_image_file(filename):
+                    if mime not in ['image/png', 'image/jpeg', 'image/gif']:
+                        flash(f'File {filename} is not a valid image type.', 'danger')
+                        continue
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
                     images.append(file_filename)
                 elif is_excalidraw_file(filename):
+                    if mime != 'application/json':
+                        flash(f'File {filename} is not a valid Excalidraw file.', 'danger')
+                        continue
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_filename))
                     excalidraw_files.append(file_filename)
+                else:
+                    flash(f'File {filename} has an unsupported extension.', 'danger')
+                    continue
     
     # Extract hashtags
     hashtags = extract_hashtags(content)
