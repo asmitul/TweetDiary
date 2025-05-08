@@ -891,12 +891,38 @@ def view_tweet(entry_id):
 @login_required
 def excalidraw_file(filename):
     """Serve Excalidraw files with appropriate content type and CORS headers"""
-    response = send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype='application/json')
-    # Add CORS headers to allow embedding in iframe
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return response
+    try:
+        # Get the absolute file path
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return "File not found", 404
+        
+        # Read file content directly to ensure correct JSON is returned
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        # Create a response with the file content and proper headers
+        response = app.response_class(
+            response=content,
+            status=200,
+            mimetype='application/json'
+        )
+        
+        # Add comprehensive CORS headers to allow embedding in iframe
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Origin, Content-Type, Accept, X-Requested-With'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        return response
+    except Exception as e:
+        app.logger.error(f"Error serving Excalidraw file: {str(e)}")
+        return str(e), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
