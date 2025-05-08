@@ -128,6 +128,18 @@ def format_timestamp(timestamp_str, format_str="%Y-%m-%d %H:%M"):
 def istanbul_time_filter(timestamp_str, format_str="%Y-%m-%d %H:%M"):
     return format_timestamp(timestamp_str, format_str)
 
+@app.template_filter('hashtag')
+def hashtag_filter(s):
+    if not s:
+        return ""
+    # Use a more robust regex that handles various hashtag formats and avoids partial matches within words.
+    # It looks for a #, followed by one or more word characters (letters, numbers, underscore).
+    # It also ensures that the character preceding the # is not a word character to avoid partial matches.
+    # The (?<!\\w) is a negative lookbehind asserting that what precedes is not a word character.
+    # The (\\w+) captures the hashtag itself.
+    # The link will point to /hashtag/<tag_name>
+    return re.sub(r"(?<!\\w)#(\\w+)", r'<a href="/hashtag/\\1">#\\1</a>', s, flags=re.UNICODE)
+
 @app.route('/')
 @app.route('/page/<int:page>')
 def index(page=1):
