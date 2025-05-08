@@ -397,7 +397,7 @@
                                 <a href="{{ url_for('excalidraw_file', filename=excalidraw_file) }}" download class="btn btn-sm btn-outline-secondary me-2">
                                     <i class="fas fa-download me-1"></i>Download
                                 </a>
-                                <a href="https://excalidraw.com/#json={{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}" 
+                                <a href="https://excalidraw.com/?scene-jsonurl={{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}"
                                    target="_blank" class="btn btn-sm btn-primary">
                                     <i class="fas fa-external-link-alt me-1"></i>Open in Excalidraw
                                 </a>
@@ -409,7 +409,7 @@
                         <div class="excalidraw-preview-container" id="preview-{{ excalidraw_file }}" style="display: none;">
                             <div class="ratio ratio-16x9 mt-3 mb-2 border">
                                 <iframe 
-                                    src="https://excalidraw.com/?useHash=true" 
+                                    src="https://excalidraw.com/" 
                                     title="Excalidraw Preview" 
                                     class="excalidraw-frame"
                                     data-file-url="{{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}"
@@ -539,7 +539,7 @@
                                         .then(data => {
                                             // Send the file data to the iframe
                                             iframe.contentWindow.postMessage({
-                                                type: 'excalidrawLoadFromJSON',
+                                                type: 'excalidrawLoadFromData',
                                                 data: data
                                             }, '*');
                                             
