@@ -890,8 +890,13 @@ def view_tweet(entry_id):
 @app.route('/excalidraw/<filename>')
 @login_required
 def excalidraw_file(filename):
-    """Serve Excalidraw files with appropriate content type"""
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype='application/json')
+    """Serve Excalidraw files with appropriate content type and CORS headers"""
+    response = send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype='application/json')
+    # Add CORS headers to allow embedding in iframe
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 

@@ -256,6 +256,22 @@
                 width: calc(50% - 5px);
             }
         }
+        
+        /* Excalidraw styles */
+        .excalidraw-preview-container {
+            transition: all 0.3s ease;
+        }
+        .excalidraw-frame {
+            border: none;
+            border-radius: 8px;
+            background-color: #f8f8f8;
+        }
+        .excalidraw-file-item {
+            transition: all 0.2s ease;
+        }
+        .excalidraw-file-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -372,7 +388,7 @@
                 <h5 class="mb-3">Excalidraw Files</h5>
                 {% for excalidraw_file in entry.excalidraw_files %}
                     <div class="excalidraw-file-item mb-3 p-3 border rounded bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
                             <div>
                                 <i class="fas fa-file-alt me-2 text-primary"></i>
                                 <span class="fw-bold">{{ excalidraw_file.split('_', 1)[1] }}</span>
@@ -385,6 +401,20 @@
                                    target="_blank" class="btn btn-sm btn-primary">
                                     <i class="fas fa-external-link-alt me-1"></i>Open in Excalidraw
                                 </a>
+                                <button class="btn btn-sm btn-outline-success ms-2 preview-excalidraw" data-file="{{ excalidraw_file }}">
+                                    <i class="fas fa-eye me-1"></i>Preview
+                                </button>
+                            </div>
+                        </div>
+                        <div class="excalidraw-preview-container" id="preview-{{ excalidraw_file }}" style="display: none;">
+                            <div class="ratio ratio-16x9 mt-3 mb-2 border">
+                                <iframe 
+                                    src="https://excalidraw.com/?useHash=true" 
+                                    title="Excalidraw Preview" 
+                                    class="excalidraw-frame"
+                                    data-file-url="{{ url_for('excalidraw_file', filename=excalidraw_file, _external=True) }}"
+                                    allowfullscreen>
+                                </iframe>
                             </div>
                         </div>
                     </div>
@@ -481,6 +511,61 @@
                     const bsAlert = new bootstrap.Alert(alert);
                     bsAlert.close();
                 }, 2500);
+            });
+            
+            // Excalidraw preview functionality
+            const previewButtons = document.querySelectorAll('.preview-excalidraw');
+            previewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const fileId = this.getAttribute('data-file');
+                    const previewContainer = document.getElementById(`preview-${fileId}`);
+                    
+                    if (previewContainer.style.display === 'none') {
+                        // Show the preview
+                        previewContainer.style.display = 'block';
+                        
+                        // Get the iframe
+                        const iframe = previewContainer.querySelector('iframe');
+                        const fileUrl = iframe.getAttribute('data-file-url');
+                        
+                        // Only load the file if the iframe hasn't been loaded yet
+                        if (!iframe.hasAttribute('data-loaded')) {
+                            // Set up a message listener to know when excalidraw is ready
+                            window.addEventListener('message', function loadExcalidrawFile(event) {
+                                if (event.source === iframe.contentWindow && event.data.type === 'excalidrawReady') {
+                                    // Fetch the file content
+                                    fetch(fileUrl)
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            // Send the file data to the iframe
+                                            iframe.contentWindow.postMessage({
+                                                type: 'excalidrawLoadFromJSON',
+                                                data: data
+                                            }, '*');
+                                            
+                                            // Mark iframe as loaded
+                                            iframe.setAttribute('data-loaded', 'true');
+                                        })
+                                        .catch(error => {
+                                            console.error('Error loading Excalidraw file:', error);
+                                        });
+                                    
+                                    // Remove the event listener after handling
+                                    window.removeEventListener('message', loadExcalidrawFile);
+                                }
+                            });
+                            
+                            // Update the button text
+                            this.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Hide Preview';
+                        }
+                    } else {
+                        // Hide the preview
+                        previewContainer.style.display = 'none';
+                        
+                        // Update the button text
+                        this.innerHTML = '<i class="fas fa-eye me-1"></i>Preview';
+                    }
+                });
             });
             
             // Fullscreen image functionality
