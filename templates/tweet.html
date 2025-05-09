@@ -361,7 +361,7 @@
                 </div>
             </div>
             
-            <div class="tweet-content">{{ entry.content }}</div>
+            <div class="tweet-content">{{- entry.content -}}</div>
             
             {% if entry.images %}
                 <div class="image-grid {% if entry.images|length == 1 %}single-image{% elif entry.images|length == 2 %}two-images{% elif entry.images|length == 3 %}three-images{% elif entry.images|length >= 4 %}four-plus-images{% endif %}">
