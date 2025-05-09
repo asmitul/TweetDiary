@@ -48,9 +48,8 @@
         }
         .tweet-content {
             font-size: 1.2rem;
-            margin-bottom: 20px;
-            line-height: 1.5;
-            white-space: pre-wrap;
+            margin-bottom: 15px;
+            white-space: normal;
         }
         .tweet-image {
             max-width: 100%;
@@ -361,7 +360,7 @@
                 </div>
             </div>
             
-            <div class="tweet-content">{{- entry.content -}}</div>
+            <div class="tweet-content">{{ entry.content }}</div>
             
             {% if entry.images %}
                 <div class="image-grid {% if entry.images|length == 1 %}single-image{% elif entry.images|length == 2 %}two-images{% elif entry.images|length == 3 %}three-images{% elif entry.images|length >= 4 %}four-plus-images{% endif %}">
@@ -491,18 +490,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Process tweet content to remove leading/trailing whitespace
-            document.querySelectorAll('.tweet-content').forEach(function(element) {
-                // Get the original text with all whitespace preserved
-                const originalText = element.textContent;
-                // Split by line breaks, trim each line, then rejoin
-                const trimmedText = originalText.split('\n')
-                    .map(line => line.trim())
-                    .join('\n');
-                // Replace the content
-                element.textContent = trimmedText;
-            });
-            
             // Auto-dismiss alerts after 5 seconds
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
